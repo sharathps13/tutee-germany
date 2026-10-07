@@ -38,10 +38,10 @@
     # inherited from the original design.
     Content-Security-Policy = """
       default-src 'self'; \
-      script-src 'self'; \
-      style-src 'self' 'unsafe-inline'; \
-      img-src 'self' data:; \
-      font-src 'self'; \
+      script-src 'self' 'sha256-dFqnkix/KyuQ/tR3B/FYwRtcbWXrtRW7VdscV/VFsmc='; \
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
+      img-src 'self' data: https://images.unsplash.com; \
+      font-src 'self' https://fonts.gstatic.com; \
       connect-src 'self' https://*.supabase.co; \
       form-action 'self'; \
       base-uri 'self'; \

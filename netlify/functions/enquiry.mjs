@@ -57,10 +57,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // country here in the same commit as the page.
 const KNOWN_COUNTRIES = ['Australia', 'Canada', 'Finland', 'France', 'Germany',
   'Ireland', 'Malaysia', 'Mauritius', 'New Zealand',
-  'Poland', 'Singapore', 'UAE', 'UK'];
+  'Poland', 'Singapore', 'UAE', 'UK', 'USA'];
 
 const COUNTRY_ALIASES = {
   uk: 'UK', unitedkingdom: 'UK', britain: 'UK', gb: 'UK',
+  usa: 'USA', us: 'USA', unitedstates: 'USA', america: 'USA',
   canada: 'Canada', ca: 'Canada',
   germany: 'Germany', de: 'Germany', deutschland: 'Germany',
   ireland: 'Ireland', ie: 'Ireland',
