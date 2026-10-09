@@ -401,7 +401,10 @@
             <h3>Your next destination is waiting.</h3>
             <div class="mstamps" aria-hidden="true"><span style="color:#1f6f6b">MAA · DEPARTED</span><span style="color:#760d0d">DE · ADMITTED</span><span style="color:#1c8a4c">FREE CONSULTATION</span></div>
             <p class="page__p">Tell us who you are. A Germany advisor will call to plan your route — universities, APS, blocked account and visa. Free, no obligation.</p>
-            <form id="pass" novalidate>
+            <form id="pass" name="germany-enquiry" method="POST" data-netlify="true" netlify-honeypot="botcheck" novalidate>
+              <input type="hidden" name="form-name" value="germany-enquiry">
+              <input type="hidden" name="phone" id="p-full-phone" value="">
+              <input type="hidden" name="page" id="p-page" value="">
               <input class="hp" type="text" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
               <input type="hidden" name="destination_choice" id="p-dest" value="Germany">
               <input type="hidden" name="university" id="p-uni" value="">

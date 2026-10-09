@@ -1533,3 +1533,18 @@ body.in-why .pill{transform:translate(-50%,170%)}
 @media (prefers-reduced-motion:reduce){.btn:hover .ar svg:first-child{animation:none}}
 /* v40 — arrows sit above the map legend row (legend was covering them) */
 .ud__nav{z-index:5}.udm__foot{pointer-events:none}.udm__foot>*{pointer-events:auto}
+
+/* ===== v41 — dark-teal glass header (replaces the gold bar) ===== */
+.hdr,.hdr.solid{background:linear-gradient(180deg,rgba(18,58,58,.62),rgba(7,26,26,.55));backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 12px 34px -20px rgba(0,0,0,.8)}
+.hdr::before{background:linear-gradient(100deg,rgba(255,255,255,.07),rgba(255,255,255,0) 35%,rgba(249,201,92,.05) 70%,rgba(255,255,255,0))}
+.hdr::after{background:linear-gradient(90deg,transparent,rgba(249,201,92,.35) 25%,rgba(249,201,92,.35) 75%,transparent)}
+.hdr nav a{color:rgba(255,255,255,.78)}
+.hdr nav a:hover,.hdr nav a.on{color:#fff}
+.hdr nav a::after{background:var(--gold)}
+.brand>small{color:rgba(255,255,255,.82)}
+.hdr__menu{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.06)}
+.hdr__menu i{background:#fff}
+/* soft light behind the logo so its teal/maroon lettering stays legible on dark glass (no box) */
+.brand__plate{position:relative}
+.brand__plate::before{content:"";position:absolute;inset:-14px -22px;z-index:-1;background:radial-gradient(closest-side,rgba(251,246,234,.85),rgba(251,246,234,.45) 60%,rgba(251,246,234,0));filter:blur(2px)}
+.brand{isolation:isolate}

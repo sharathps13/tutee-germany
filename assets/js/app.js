@@ -497,10 +497,14 @@
         destination: dest + (d.university ? ' | University: ' + d.university : '') + ' | ' + d.study_level + ' | from ' + d.origin, university: d.university || '', study_level: d.study_level, origin: d.origin,
         from_name: 'Tutee Connect — Germany landing page', page: location.pathname + location.search, botcheck: d.botcheck };
       go.disabled = true; $('#p-go-t').textContent = 'Stamping your passport…';
-      fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
-        .then(function (r) { return r.json().catch(function () { return { success: r.ok }; }); })
-        .then(function (res) {
-          if (!res || !res.success) throw new Error((res && res.message) || '');
+      // Netlify Forms: Netlify stores the lead and emails business@tuteeconnect.com.
+      $('#p-full-phone').value = payload.phone; $('#p-page').value = payload.page;
+      var body = new URLSearchParams(new FormData(form)).toString();
+      // Optional backup copy to Supabase via the function; never blocks the student.
+      try { fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(function () {}); } catch (e2) {}
+      fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+        .then(function (r) {
+          if (!r.ok) throw new Error('');
           $('#done-n').textContent = d.name.split(' ')[0]; book.classList.add('ok');
           if (window.dataLayer) dataLayer.push({ event: 'generate_lead', lead_country: dest, lead_university: d.university || '', lead_level: d.study_level, lead_origin: d.origin });
           if (window.fbq) fbq('track', 'Lead');
