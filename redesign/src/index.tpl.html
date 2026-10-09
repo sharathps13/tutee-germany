@@ -26,15 +26,16 @@
 
 <header class="hdr" id="hdr">
   <div class="wrap hdr__in">
-    <a class="brand" href="#top" aria-label="Tutee Connect Germany — top of page">
-      <img src="assets/img/icon.png" alt="" width="44" height="44">
-      <span><b>Tutee Connect</b><small><span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>STUDY IN GERMANY</small></span>
+    <a class="brand" href="#top" aria-label="Tutee Connect — Study in Germany, back to top">
+      <span class="brand__plate"><img src="assets/img/logo-master.png" alt="Tutee Connect — Study | Immigration" width="295" height="120"></span>
+      <small><span class="flag" aria-hidden="true"><i></i><i></i><i></i></span>STUDY IN GERMANY</small>
     </a>
-    <nav aria-label="Primary">
+    <nav aria-label="Primary" id="hdr-nav">
       <a href="#explore">Destinations</a><a href="#choose">Universities</a><a href="#services">Services</a>
       <a href="#afford">Costs</a><a href="#pathway">Pathway</a><a href="#faq">FAQ</a>
     </nav>
-    <a class="btn btn--sm mag" href="#begin">Free counselling {{arrow}}</a>
+    <a class="btn btn--sm mag hdr__cta" href="#begin">Free counselling {{arrow}}</a>
+    <button type="button" class="hdr__menu" id="hdr-menu" aria-expanded="false" aria-controls="hdr-nav" aria-label="Open menu"><i></i><i></i></button>
   </div>
 </header>
 
@@ -42,11 +43,15 @@
 
 <!-- 01 DREAM — hero: interactive globe -->
 <section class="hero4" id="hero" aria-labelledby="h1" data-stage="Dream">
-  <div class="h4__sky" aria-hidden="true" data-depth="0.15">{{img 1451187580459-43490279c0fa|Earth at night seen from space|100vw|fetchpriority="high"}}</div>
+  <div class="h4__sky" aria-hidden="true" data-depth="0.15"><img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=2560" srcset="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=1280 1280w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=1920 1920w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=2560 2560w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=3200 3200w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=3840 3840w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=85&w=4256 4256w" sizes="112vw" alt="Earth at night seen from space" fetchpriority="high" decoding="async" width="4256" height="2832"></div>
   <div class="h4__stars" aria-hidden="true" data-depth="0.3"></div>
   <div class="h4__globe" id="h4-globe" data-depth="0.6">
     <canvas id="globe"></canvas>
-    <div class="h4__peek" id="h4-peek" aria-hidden="true"><div class="peek__img" id="peek-img"></div><div class="peek__t"><span class="mono" id="peek-code">DE</span><b id="peek-name">Germany</b><small id="peek-ll"></small></div></div>
+    <div class="dcard" id="dcard" role="dialog" aria-live="polite" aria-label="Destination preview">
+      <div class="dcard__img"><img id="dc-img" alt="" decoding="async"><img id="dc-img2" alt="" decoding="async"></div>
+      <div class="dcard__b"><span class="dcard__ll mono" id="dc-ll"></span><b class="dcard__name" id="dc-name"></b><p class="dcard__tag" id="dc-tag"></p>
+        <a class="dcard__go" href="#explore" id="dc-go">Explore <span id="dc-go-n"></span> →</a></div>
+    </div>
     <div class="h4__ring"></div>
   </div>
   <div class="h4__tags" aria-hidden="true" data-depth="1">
@@ -93,16 +98,14 @@
     <div class="head">
       <div><span class="kicker rv"><span class="n">02</span>Explore</span>
         <h2 id="wm-t" class="split">Choose where your journey <em>takes you.</em></h2></div>
-      <p class="lead rv r1">Fourteen destinations, one team. Tap a marker to draw your route from Chennai — Germany is where this page begins.</p>
+      <p class="lead rv r1">Fourteen destinations, one team. Hover or tap a marker to meet each destination — Germany is where this page begins.</p>
     </div>
   </div>
   <div class="wm__stage">
     <svg class="wm__svg" id="wm" viewBox="0 0 1400 496" role="group" aria-label="World map of Tutee Connect destinations">
       {{worlddots}}
-      <path class="wm__route" id="wm-route" d=""/>
       <g class="wm__origin" transform="translate(1001.1 251.7)"><circle class="p" r="7"/><circle r="5"/><text x="12" y="-8">MAA · YOU</text></g>
       <g id="wm-pins"></g>
-      <g class="wm__plane" id="wm-plane"><path d="M0-9 2 -3 9 1v2l-7-2 0 4 2 2v1.5L0 7l-2 1.5V7l2-2 0-4-7 2V1l7-4z" fill="#fff"/></g>
     </svg>
     <div class="wm__rail" id="wm-rail" role="tablist" aria-label="Destinations"></div>
   </div>
@@ -123,7 +126,8 @@
 <!-- 03 CHOOSE — university discovery -->
 <section class="unid" id="choose" aria-labelledby="uni-t" data-stage="Choose">
   <div class="ud__bgs" id="ud-bgs">{{udbgs}}</div>
-  <div class="ud__giant" id="ud-giant" aria-hidden="true">TUM</div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ud-outline" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceAlpha" operator="dilate" radius="1.4" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out" result="ring"/><feFlood flood-color="#fff"/><feComposite in2="ring" operator="in"/></filter></svg>
+  <div class="ud__giant" id="ud-giant" aria-hidden="true"><span class="g-out">TUM</span><span class="g-fill">TUM</span></div>
   <div class="wrap ud__in">
     <div class="ud__top">
       <span class="kicker light rv"><span class="n">03</span>Choose</span>
@@ -132,12 +136,16 @@
     <div class="ud__main" id="ud-main" aria-live="polite">
       <div class="ud__meta mono"><span id="ud-idx">01 / 09</span><span id="ud-ll">48.14°N · 11.58°E</span></div>
       <h3 class="ud__name" id="ud-name">Technical University of Munich</h3>
-      <div class="ud__where"><span id="ud-city">Munich</span><i>·</i><span id="ud-state">Bavaria</span><i>·</i><span>Germany</span><span class="ud__badge" id="ud-badge">Excellence</span></div>
+      <div class="ud__where"><span id="ud-city">Munich</span><i>·</i><span id="ud-state">Bavaria</span><i id="ud-sdot">·</i><span>Germany</span><span class="ud__badge" id="ud-badge">Public university</span></div>
       <div class="ud__areas"><span class="ud__lbl">Known for</span><ul id="ud-areas"></ul></div>
-      <div class="ud__cta"><a class="btn btn--lg mag" href="#begin">Find your university {{arrow}}</a><a class="tlink" href="#begin">Explore courses →</a></div>
+      <div class="ud__cta"><a class="btn btn--lg mag" href="#begin">Find your university {{arrow}}</a><a class="tlink" id="ud-explore" href="universities.html">Explore all German universities →</a></div>
     </div>
     <div class="ud__side">
-      <svg class="ud__map" viewBox="0 0 420 273" aria-hidden="true">{{dedots}}<g id="ud-pins"></g></svg>
+      <div class="udm" id="udm">
+        <svg class="ud__map udm__svg" viewBox="58 4 304 262" role="group" aria-label="Map of German universities">{{deonly}}<g id="udm-cities" aria-hidden="true"></g><g id="ud-pins"></g></svg>
+        <div class="udm__tip" id="udm-tip" aria-hidden="true"><span class="udm__im" id="udm-im"></span><span class="udm__tx"><b id="udm-n"></b><small id="udm-c"></small><i id="udm-t"></i></span></div>
+        <div class="udm__foot"><span class="udm__lg"><i class="pub"></i>Public</span><span class="udm__lg"><i class="pri"></i>Private</span></div>
+      </div>
       <div class="ud__nav"><button type="button" id="ud-prev" aria-label="Previous university"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><button type="button" id="ud-next" aria-label="Next university"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
     </div>
   </div>
@@ -145,30 +153,72 @@
 </section>
 
 <!-- 04 WHY WE DO — the journey (scroll-driven stages) -->
-<section class="why5" id="services" aria-labelledby="svc-t" data-stage="Prepare">
-  <div class="w5__pin" id="w5-pin">
-    <div class="w5__bgs" id="w5-bgs">{{w5imgs}}</div>
-    <div class="w5__word" id="w5-word" aria-hidden="true">Dream</div>
-    <div class="wrap w5__in">
-      <div class="w5__head">
-        <span class="kicker light"><span class="n">04</span>Why we do what we do</span>
-        <h2 id="svc-t">We exist so your move abroad is a <em>journey,</em> not a gamble.</h2>
-      </div>
-      <div class="w5__body">
-        <div class="w5__frame" id="w5-frame">{{w5frames}}<span class="w5__count mono" id="w5-count">01 / 05</span></div>
-        <div class="w5__text" id="w5-text" aria-live="polite">
-          <span class="w5__eyebrow mono" id="w5-eyebrow">STAGE 01 · DREAM</span>
-          <h3 class="w5__title" id="w5-title"></h3>
-          <p class="w5__why" id="w5-why"></p>
-          <ul class="w5__svc" id="w5-svc"></ul>
-          <a class="btn mag" href="#begin" id="w5-cta"><span id="w5-cta-t">Book career guidance</span> {{arrow}}</a>
-        </div>
-      </div>
-      <nav class="w5__track" id="w5-track" aria-label="Journey stages" role="tablist">
-        <div class="w5__line" aria-hidden="true"><span class="w5__fill" id="w5-fill"></span></div>
-        <svg class="w5__plane" id="w5-plane" width="22" height="22" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0-9 2 -3 9 1v2l-7-2 0 4 2 2v1.5L0 7l-2 1.5V7l2-2 0-4-7 2V1l7-4z" fill="currentColor" transform="rotate(90)"/></svg>
-      </nav>
+<section class="wd" id="services" aria-labelledby="svc-t" data-stage="Prepare">
+  <div class="wd__stage" id="wd-stage">
+    <div class="wrap wd__head"><span class="kicker light"><span class="n">04</span>What we do</span><h2 id="svc-t" class="wd__h">Your journey to Germany, <em>one chapter at a time.</em></h2></div>
+    <div class="wd__chs">
+        <article class="wd__ch on" data-i="0" aria-labelledby="wd-t0">
+          <figure class="wd__fig">{{img 1777802854359-07bb63ec9b19|Munich's skyline with the Frauenkirche and town hall towers at golden hour|(max-width:900px) 100vw, 58vw|loading="lazy"}}</figure>
+          <div class="wd__copy">
+            <span class="wd__num" aria-hidden="true">01</span>
+            <span class="wd__eb mono">01 / DREAM</span>
+            <p class="wd__q">“I can imagine my future in Germany.”</p>
+            <h3 class="wd__t" id="wd-t0">It starts with a conversation, not a form.</h3>
+            <p class="wd__p">Every plan begins with you — your profile, your budget, the career you picture. A free first session turns a vague dream into a direction.</p>
+            <ul class="wd__tags"><li>Free 1:1 session</li><li>Profile evaluation</li><li>Course direction</li></ul>
+            <a class="tlink wd__cta" href="#begin">Book career guidance →</a>
+          </div>
+        </article>
+        <article class="wd__ch" data-i="1" aria-labelledby="wd-t1">
+          <figure class="wd__fig">{{img 1526314114033-349ef6f72220|Rows of open reading floors in a Berlin university library|(max-width:900px) 100vw, 58vw|fetchpriority="low" loading="lazy"}}</figure>
+          <div class="wd__copy">
+            <span class="wd__num" aria-hidden="true">02</span>
+            <span class="wd__eb mono">02 / EXPLORE</span>
+            <p class="wd__q">“Which universities and cities are right for me?”</p>
+            <h3 class="wd__t" id="wd-t1">See the whole map before you pick a road.</h3>
+            <p class="wd__p">We compare cities, universities and routes honestly — including when Germany isn't your best fit — and plan your language tests early.</p>
+            <ul class="wd__tags"><li>Cities & universities</li><li>IELTS · TestDaF · Goethe</li><li>Honest fit check</li></ul>
+            <a class="tlink wd__cta" href="#begin">Explore your options →</a>
+          </div>
+        </article>
+        <article class="wd__ch" data-i="2" aria-labelledby="wd-t2">
+          <figure class="wd__fig">{{img 1593672572837-d1bb82b59370|Books on wooden shelves in a Berlin library|(max-width:900px) 100vw, 58vw|fetchpriority="low" loading="lazy"}}</figure>
+          <div class="wd__copy">
+            <span class="wd__num" aria-hidden="true">03</span>
+            <span class="wd__eb mono">03 / CHOOSE</span>
+            <p class="wd__q">“Which course and university should I choose?”</p>
+            <h3 class="wd__t" id="wd-t2">The right university, not just a famous one.</h3>
+            <p class="wd__p">A shortlist of public universities and Fachhochschulen matched to your grades, goals and budget — ambitious, target and safe.</p>
+            <ul class="wd__tags"><li>Ambitious · target · safe</li><li>Public & applied sciences</li><li>Course match</li></ul>
+            <a class="tlink wd__cta" href="#begin">Find my right course →</a>
+          </div>
+        </article>
+        <article class="wd__ch" data-i="3" aria-labelledby="wd-t3">
+          <figure class="wd__fig">{{img 1504723246034-0977641ea907|A Lufthansa airliner at the gate, ready for departure|(max-width:900px) 100vw, 58vw|fetchpriority="low" loading="lazy"}}</figure>
+          <div class="wd__copy">
+            <span class="wd__num" aria-hidden="true">04</span>
+            <span class="wd__eb mono">04 / PREPARE</span>
+            <p class="wd__q">“How do I get ready to move?”</p>
+            <h3 class="wd__t" id="wd-t3">Every document right, the first time.</h3>
+            <p class="wd__p">APS, uni-assist, blocked account, scholarships, loans and your national (D) visa — checked the way a visa officer would check them.</p>
+            <ul class="wd__tags"><li>APS & uni-assist</li><li>Blocked account</li><li>National (D) visa</li></ul>
+            <a class="tlink wd__cta" href="#begin">Get visa guidance →</a>
+          </div>
+        </article>
+        <article class="wd__ch" data-i="4" aria-labelledby="wd-t4">
+          <figure class="wd__fig">{{img 1784398428911-3aefd9654f4f|A person walking towards the Brandenburg Gate in Berlin|(max-width:900px) 100vw, 58vw|fetchpriority="low" loading="lazy"}}</figure>
+          <div class="wd__copy">
+            <span class="wd__num" aria-hidden="true">05</span>
+            <span class="wd__eb mono">05 / GO GLOBAL</span>
+            <p class="wd__q">“I've arrived. My next chapter begins.”</p>
+            <h3 class="wd__t" id="wd-t4">We don't disappear at the airport.</h3>
+            <p class="wd__p">Housing, Anmeldung, residence permit, part-time work — and later, the Blue Card route that brings your family over.</p>
+            <ul class="wd__tags"><li>Housing & Anmeldung</li><li>Residence permit</li><li>Part-time work</li></ul>
+            <a class="tlink wd__cta" href="#begin">Start my journey →</a>
+          </div>
+        </article>
     </div>
+    <nav class="wd__rail" aria-label="Journey stages"><ol><li><button type="button" data-i="0" aria-current="step"><span class="mono">01</span><b>Dream</b></button></li><li><button type="button" data-i="1"><span class="mono">02</span><b>Explore</b></button></li><li><button type="button" data-i="2"><span class="mono">03</span><b>Choose</b></button></li><li><button type="button" data-i="3"><span class="mono">04</span><b>Prepare</b></button></li><li><button type="button" data-i="4"><span class="mono">05</span><b>Go global</b></button></li></ol></nav>
   </div>
 </section>
 
@@ -304,17 +354,32 @@
 </section>
 
 <!-- 08 FAQ -->
-<section class="sec" id="faq" aria-labelledby="faq-t">
-  <div class="wrap faq">
-    <div class="faq__side">
-      <span class="kicker rv"><span class="n">08</span>Good questions</span>
-      <h2 id="faq-t" class="split">Everything you wanted to <em>ask.</em></h2>
-      <div class="advisor rv">
-        <div class="ph">{{img 1571260899304-425eee4c7efc|A smiling student holding notebooks|(max-width:900px) 120px, 30vw|loading="lazy"}}</div>
-        <div class="advisor__b"><b>Still unsure about something?</b><p>An advisor can answer it for your exact profile, usually in one short call.</p><a class="btn btn--sm mag" href="#begin">Talk to an advisor {{arrow}}</a></div>
+<section class="sec tav" id="faq" aria-labelledby="faq-t">
+  <div class="wrap">
+    <div class="tav__head">
+      <div><span class="kicker rv"><span class="n">08</span>Ask a Tutee Advisor</span>
+        <h2 id="faq-t" class="split">Frequently asked. <em>Clearly answered.</em></h2></div>
+      <p class="lead rv r1">Six stops on the road to Germany. Choose a stop, pick a question — or ask your own — and a Tutee Advisor walks you through it.</p>
+    </div>
+    <div class="tav__ui" id="advisor">
+      <ol class="tav__route" id="tav-route" aria-label="Question topics"></ol>
+      <span class="tav__link" id="tav-link" aria-hidden="true"><i></i></span>
+      <div class="tav__desk">
+        <header class="tav__top">
+          <i class="tav__logo" role="img" aria-label="Tutee Connect"></i>
+          <div class="tav__who"><b>Tutee Advisor</b><span><i class="tav__flag" aria-hidden="true"></i><span id="tav-status">Prepared &amp; checked by our Germany counsellors</span></span></div>
+          <button type="button" class="tav__restart" id="tav-restart">Start over</button>
+        </header>
+        <div class="tav__thread" id="tav-thread" aria-live="polite"></div>
+        <div class="tav__follow" id="tav-follow" aria-label="Follow-up questions"></div>
+        <form class="tav__ask" id="tav-form" autocomplete="off">
+          <label class="sr" for="tav-in">Ask your own question</label>
+          <input id="tav-in" type="text" maxlength="200" placeholder="Ask anything about studying, visas or life in Germany…" enterkeyhint="send">
+          <button type="submit" aria-label="Send question"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
+        <p class="tav__note">Answers are general guidance, not a live chat. For anything specific to your profile, a counsellor replies personally.</p>
       </div>
     </div>
-    <div class="acc" id="acc"></div>
   </div>
 </section>
 
@@ -339,6 +404,8 @@
             <form id="pass" novalidate>
               <input class="hp" type="text" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
               <input type="hidden" name="destination_choice" id="p-dest" value="Germany">
+              <input type="hidden" name="university" id="p-uni" value="">
+              <div class="pf-uni" id="p-uni-box" hidden><span class="pf-uni__l">University of interest</span><b id="p-uni-n"></b><button type="button" id="p-uni-x" aria-label="Remove university of interest">×</button></div>
               <div class="pf"><label for="p-name">Holder's name</label><input id="p-name" name="name" type="text" placeholder="YOUR NAME" autocomplete="name" required><p class="err">Please enter your name.</p></div>
               <div class="pf-row">
                 <div class="pf"><label for="p-phone">Phone / WhatsApp</label><div class="ph2"><select id="p-cc" name="country_code" aria-label="Country code"><option value="+91" selected>+91</option><option value="+971">+971</option><option value="+94">+94</option><option value="+977">+977</option><option value="+880">+880</option><option value="+49">+49</option><option value="+966">+966</option><option value="+974">+974</option><option value="+65">+65</option><option value="+44">+44</option><option value="+1">+1</option></select><input id="p-phone" name="phone_number" type="tel" inputmode="tel" placeholder="98765 43210" autocomplete="tel-national" required></div><p class="err">Enter 7–15 digits.</p></div>
@@ -440,7 +507,9 @@
   <a href="#services"><span>Prepare</span><i></i></a><a href="#pathway"><span>Fly</span><i></i></a><a href="#begin"><span>Begin</span><i></i></a>
 </nav>
 <script src="assets/js/land.js" defer></script>
-<script src="assets/js/globe4.js" defer></script>
+<script src="assets/js/globe5.js" defer></script>
+<script src="assets/js/unis-de.js" defer></script>
 <script src="assets/js/app.js" defer></script>
+<script src="assets/js/advisor.js" defer></script>
 </body>
 </html>

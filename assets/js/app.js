@@ -67,7 +67,7 @@
   var onScroll = raf(function () {
     var y = scrollY, past = y > $('#hero').offsetHeight * .75;
     hdr.classList.toggle('solid', y > 40);
-    if (y > 500 && y > lastY + 4) hdr.classList.add('hide'); else if (y < lastY - 4) hdr.classList.remove('hide');
+    if (y > 500 && y > lastY + 4 && !(window.__navLock > Date.now())) hdr.classList.add('hide'); else if (y < lastY - 4) hdr.classList.remove('hide');
     [pill, mbar].forEach(function (el) { el.classList.toggle('on', past && !formOn); });
     wa.classList.toggle('on', past);
     lastY = y;
@@ -140,57 +140,114 @@
     { id: 'mu', code: 'MU', name: 'Mauritius', ll: '20.2°S 57.5°E', x: 910, y: 384.8, tag: 'An island campus with international degrees.', facts: ['Affordable international programmes', 'English and French widely spoken', 'A safe, peaceful study environment'] }
   ];
   var UNIV = [
-    { s: 'TUM', name: 'Technical University of Munich', city: 'Munich', state: 'Bavaria', ll: '48.14°N · 11.58°E', x: 242.4, y: 223.8, b: 'Excellence', areas: ['Engineering', 'Computer Science', 'Natural Sciences', 'Management'] },
-    { s: 'LMU', name: 'LMU Munich', city: 'Munich', state: 'Bavaria', ll: '48.15°N · 11.58°E', x: 242.4, y: 223.8, b: 'Excellence', areas: ['Humanities', 'Medicine', 'Business', 'Natural Sciences'] },
-    { s: 'HEI', name: 'Heidelberg University', city: 'Heidelberg', state: 'Baden-Württemberg', ll: '49.40°N · 8.67°E', x: 155.1, y: 186, b: 'Excellence', areas: ['Medicine', 'Life Sciences', 'Physics', 'Humanities'] },
-    { s: 'RWTH', name: 'RWTH Aachen University', city: 'Aachen', state: 'North Rhine-Westphalia', ll: '50.78°N · 6.08°E', x: 77.4, y: 144.6, b: 'TU9', areas: ['Mechanical Engineering', 'Electrical Engineering', 'Computer Science', 'Architecture'] },
-    { s: 'KIT', name: 'Karlsruhe Institute of Technology', city: 'Karlsruhe', state: 'Baden-Württemberg', ll: '49.01°N · 8.40°E', x: 147, y: 197.7, b: 'Excellence', areas: ['Engineering', 'Physics', 'Computer Science', 'Energy'] },
-    { s: 'FU', name: 'Freie Universität Berlin', city: 'Berlin', state: 'Berlin', ll: '52.45°N · 13.29°E', x: 297, y: 92.4, b: 'Public', areas: ['Social Sciences', 'Humanities', 'Natural Sciences', 'Economics'] },
-    { s: 'TUB', name: 'Technische Universität Berlin', city: 'Berlin', state: 'Berlin', ll: '52.51°N · 13.33°E', x: 297, y: 92.4, b: 'TU9', areas: ['Engineering', 'Computer Science', 'Urban Planning', 'Management'] },
-    { s: 'UHH', name: 'University of Hamburg', city: 'Hamburg', state: 'Hamburg', ll: '53.57°N · 9.98°E', x: 194.7, y: 61.5, b: 'Public', areas: ['Law', 'Economics', 'Natural Sciences', 'Climate Research'] },
-    { s: 'TUD', name: 'TU Dresden', city: 'Dresden', state: 'Saxony', ll: '51.03°N · 13.73°E', x: 307.2, y: 136.5, b: 'TU9', areas: ['Engineering', 'Microelectronics', 'Life Sciences', 'Computer Science'] }
+    { s: 'TUM', name: 'Technical University of Munich', city: 'Munich', state: 'Bavaria', ll: '48.14°N · 11.58°E', x: 242.4, y: 223.8, b: 'Public university', areas: ['Engineering', 'Computer Science', 'Natural Sciences', 'Management'] },
+    { s: 'LMU', name: 'LMU Munich', city: 'Munich', state: 'Bavaria', ll: '48.15°N · 11.58°E', x: 242.4, y: 223.8, b: 'Public university', areas: ['Humanities', 'Medicine', 'Business', 'Natural Sciences'] },
+    { s: 'HEI', name: 'Heidelberg University', city: 'Heidelberg', state: 'Baden-Württemberg', ll: '49.40°N · 8.67°E', x: 155.1, y: 186, b: 'Public university', areas: ['Medicine', 'Life Sciences', 'Physics', 'Humanities'] },
+    { s: 'RWTH', name: 'RWTH Aachen University', city: 'Aachen', state: 'North Rhine-Westphalia', ll: '50.78°N · 6.08°E', x: 77.4, y: 144.6, b: 'Public university', areas: ['Mechanical Engineering', 'Electrical Engineering', 'Computer Science', 'Architecture'] },
+    { s: 'KIT', name: 'Karlsruhe Institute of Technology', city: 'Karlsruhe', state: 'Baden-Württemberg', ll: '49.01°N · 8.40°E', x: 147, y: 197.7, b: 'Public university', areas: ['Engineering', 'Physics', 'Computer Science', 'Energy'] },
+    { s: 'FU', name: 'Freie Universität Berlin', city: 'Berlin', state: 'Berlin', ll: '52.45°N · 13.29°E', x: 297, y: 92.4, b: 'Public university', areas: ['Social Sciences', 'Humanities', 'Natural Sciences', 'Economics'] },
+    { s: 'TUB', name: 'Technische Universität Berlin', city: 'Berlin', state: 'Berlin', ll: '52.51°N · 13.33°E', x: 297, y: 92.4, b: 'Public university', areas: ['Engineering', 'Computer Science', 'Urban Planning', 'Management'] },
+    { s: 'UHH', name: 'University of Hamburg', city: 'Hamburg', state: 'Hamburg', ll: '53.57°N · 9.98°E', x: 194.7, y: 61.5, b: 'Public university', areas: ['Law', 'Economics', 'Natural Sciences', 'Climate Research'] },
+    { s: 'TUD', name: 'TU Dresden', city: 'Dresden', state: 'Saxony', ll: '51.03°N · 13.73°E', x: 307.2, y: 136.5, b: 'Public university', areas: ['Engineering', 'Microelectronics', 'Life Sciences', 'Computer Science'] }
   ];
 
-  /* ---------------- 01 hero: globe, depth layers, scroll-out ---------------- */
+  /* ---------------- 01 hero: destination globe, depth layers, scroll-out ---------------- */
+  var TAGS = { de: 'Study • Research • Career', uk: 'Study • Graduate route • Career', us: 'Study • STEM • Research', ca: 'Study • Work • Settle',
+    au: 'Study • Work • Lifestyle', nz: 'Study • Work • Settle', ie: 'Study • Tech • Career', fr: 'Study • Business • Culture',
+    fi: 'Study • Innovation • Quality of life', pl: 'Study • Medicine • Affordable EU', sg: 'Study • Business • Asia hub',
+    my: 'Study • Value • Branch campuses', ae: 'Study • Career • Close to home', mu: 'Study • Island campus • Value' };
+  var ISO = { uk: 'gb' };
   (function () {
-    var hero = $('#hero'), g = null;
+    var hero = $('#hero'), canvas = $('#globe'), tip = $('#h4-peek'), g = null, hov = null;
     function boot() {
-      if (!window.TCGlobe) return;
-      var markers = DEST.map(function (d) { var m = d.x / 4 - 170, l = 76 - d.y / 4; return { id: d.id, lon: m, lat: l, label: d.id === 'de' ? 'GERMANY' : '' }; });
-      g = new TCGlobe($('#globe'), { markers: markers, hubs: [{ lat: 13.08, lon: 80.27, label: 'Chennai' }, { lat: 25.2, lon: 55.27, label: 'Dubai' }], lon: 40, lat: 22, spin: 0.035, arcEvery: 1100, maxArcs: 6, interactive: false });
-      g.active = 'de';
+      if (!window.TCGlobe || g) return;
+      var markers = DEST.map(function (d) { return { id: d.id, lon: d.x / 4 - 170, lat: 76 - d.y / 4 }; });
+      g = window.__tcGlobe = new TCGlobe(canvas, { markers: markers, hubs: [{ lat: 13.08, lon: 80.27 }, { lat: 25.2, lon: 55.27 }], lon: 38, lat: 24, active: 'de', arcEvery: 1500, maxArcs: 5 });
     }
     if (document.readyState === 'complete') boot(); else addEventListener('load', boot);
-    var layers = $$('[data-depth]', hero), mx = 0, my = 0;
-    if (fine && !reduce) hero.addEventListener('pointermove', function (e) {
-      mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5;
-      if (g) { g.steer.x = mx; g.steer.y = my; }
-      layers.forEach(function (l) { var d = +l.dataset.depth; l.style.transform = 'translate3d(' + (-mx * 40 * d) + 'px,' + (-my * 30 * d) + 'px,0)'; });
+
+    // depth layers: eased in one rAF loop (no CSS transitions fighting pointer events)
+    var layers = $$('[data-depth]', hero).map(function (el) { return { el: el, d: +el.dataset.depth, x: 0, y: 0 }; }), tx = 0, ty = 0, lr = null;
+    function layerLoop() {
+      var moving = false;
+      layers.forEach(function (l) { var gx = -tx * 28 * l.d, gy = -ty * 20 * l.d; l.x += (gx - l.x) * .08; l.y += (gy - l.y) * .08; if (Math.abs(gx - l.x) + Math.abs(gy - l.y) > .05) moving = true; l.el.style.transform = 'translate3d(' + l.x.toFixed(2) + 'px,' + l.y.toFixed(2) + 'px,0)'; });
+      lr = moving ? requestAnimationFrame(layerLoop) : null;
+    }
+    if (fine && !reduce) {
+      hero.addEventListener('pointermove', function (e) { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; if (g) g.setSteer(tx, ty); if (!lr) lr = requestAnimationFrame(layerLoop); }, { passive: true });
+      hero.addEventListener('pointerleave', function () { tx = ty = 0; if (g) g.setSteer(0, 0); if (!lr) lr = requestAnimationFrame(layerLoop); });
+    }
+
+    // destination cards: hover (desktop) / tap (touch) a pin → mini discovery card
+    var IMG = { de: '1560969184-10fe8719e047', uk: '1486299267070-83823f5448dd', us: '1499092346589-b9b6be3e94b2', ca: '1507992781348-310259076fe0', au: '1506973035872-a4ec16b8e8d9', nz: '1595125990323-885cec5217ff', ie: '1549918864-48ac978761a4', fr: '1502602898657-3e91760cbb34', fi: '1538332576228-eb5b4c4de6f5', pl: '1607427293702-036933bbf746', sg: '1525625293386-3f8f99389edd', my: '1566914447826-bf04e54bf1be', ae: '1512453979798-5ea266f8880c', mu: '1513415277900-a62401e19be4' };
+    var imgURL = function (id) { return 'https://images.unsplash.com/photo-' + IMG[id] + '?auto=format&fit=crop&w=560&h=320&q=82'; };
+    var card = $('#dcard'), wrap = $('#h4-globe'), imA = $('#dc-img'), imB = $('#dc-img2'), front = imA, closeT = null, swapT = null, overCard = false, side = 'r';
+    addEventListener('load', function () { setTimeout(function () { Object.keys(IMG).forEach(function (k) { new Image().src = imgURL(k); }); }, 1200); });
+    function pick(cx, cy) {
+      var r = canvas.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, best = null, bd = 22;
+      g.markers.forEach(function (m) { if (!m.p || m.p[2] <= .12) return; var d = Math.hypot(m.p[0] - x, m.p[1] - 13 * m.s - y); if (d < bd) { bd = d; best = m; } });
+      return best;
+    }
+    function fill(id) {
+      var d = DEST.filter(function (k) { return k.id === id; })[0], back = front === imA ? imB : imA;
+      back.onload = function () { back.classList.add('on'); front.classList.remove('on'); front = back; };
+      back.src = imgURL(id); back.alt = d.name;
+      $('#dc-ll').textContent = d.code + ' · ' + d.ll; $('#dc-name').textContent = d.name; $('#dc-tag').textContent = d.tag; $('#dc-go-n').textContent = '\u00a0' + d.name;
+      $('#dc-go').dataset.id = id;
+    }
+    function open(id) {
+      clearTimeout(closeT); if (id === hov) return;
+      var was = hov; hov = id; g.setHover(id); canvas.style.cursor = 'pointer';
+      if (!was) { fill(id); place(true); card.classList.add('on'); requestAnimationFrame(follow); }
+      else { card.classList.add('swap'); clearTimeout(swapT); swapT = setTimeout(function () { fill(hov); card.classList.remove('swap'); }, 140); }
+    }
+    function close(now) {
+      clearTimeout(closeT);
+      closeT = setTimeout(function () { if (overCard) return; hov = null; g && g.setHover(null); canvas.style.cursor = ''; card.classList.remove('on', 'swap'); }, now ? 0 : 260);
+    }
+    // keep the card beside its pin, inside the globe area and the viewport, never over the headline/CTA
+    function place(instant) {
+      if (!hov) return; var m = g.markers.filter(function (k) { return k.id === hov; })[0]; if (!m || !m.p) return;
+      var W = card.offsetWidth || 260, H = card.offsetHeight || 250, gr = wrap.getBoundingClientRect(), px = m.p[0], py = m.p[1] - 13 * m.s, gap = 22;
+      var copy = $('.h4__copy').getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+      function ok(x, y) { var L = gr.left + x, T = gr.top + y; if (L < 12 || T < 84 || L + W > vw - 12 || T + H > vh - 12) return false; if (L < copy.right && L + W > copy.left && T < copy.bottom && T + H > copy.top && vw > 1060) return false; return true; }
+      var opts = { r: [px + gap, py - H / 2], l: [px - gap - W, py - H / 2], t: [px - W / 2, py - gap - H], b: [px - W / 2, py + gap + 10] };
+      var order = [side, 'r', 'l', 't', 'b'], pos = null;
+      for (var k = 0; k < order.length; k++) { var o = opts[order[k]]; if (ok(o[0], o[1])) { pos = o; side = order[k]; break; } }
+      if (!pos) { pos = opts[side]; pos = [Math.max(12 - gr.left, Math.min(vw - 12 - W - gr.left, pos[0])), Math.max(84 - gr.top, Math.min(vh - 12 - H - gr.top, pos[1]))]; }
+      card.dataset.side = side; card.style.setProperty('--ax', (px - pos[0]).toFixed(0) + 'px'); card.style.setProperty('--ay', (py - pos[1]).toFixed(0) + 'px');
+      if (instant) { card.style.transition = 'none'; card.style.transform = 'translate3d(' + pos[0] + 'px,' + pos[1] + 'px,0)'; void card.offsetWidth; card.style.transition = ''; }
+      else card.style.transform = 'translate3d(' + pos[0].toFixed(1) + 'px,' + pos[1].toFixed(1) + 'px,0)';
+    }
+    function follow() { if (!hov) return; place(false); requestAnimationFrame(follow); }
+    if (fine) {
+      canvas.addEventListener('pointermove', function (e) { if (!g || e.pointerType === 'touch') return; var m = pick(e.clientX, e.clientY); if (m) open(m.id); else if (hov) close(); }, { passive: true });
+      canvas.addEventListener('pointerleave', function () { if (hov) close(); });
+    }
+    card.addEventListener('pointerenter', function () { overCard = true; clearTimeout(closeT); });
+    card.addEventListener('pointerleave', function () { overCard = false; close(); });
+    // touch: tap a pin to open / switch, tap elsewhere to close
+    canvas.addEventListener('click', function (e) {
+      if (!g) return; var m = pick(e.clientX, e.clientY);
+      if (m) { if (!fine) { open(m.id); return; } }
+      if (!fine) { overCard = false; close(true); return; }
+      if (hov) $('#dc-go').click();
     });
-    hero.addEventListener('pointerleave', function () { if (g) { g.steer.x = 0; g.steer.y = 0; } });
-    // hover a destination on the globe → postcard preview
-    var IMG = { de: '1641531339739-1d4f309980e1', uk: '1486299267070-83823f5448dd', us: '1499092346589-b9b6be3e94b2', ca: '1507992781348-310259076fe0', au: '1506973035872-a4ec16b8e8d9', nz: '1595125990323-885cec5217ff', ie: '1549918864-48ac978761a4', fr: '1502602898657-3e91760cbb34', fi: '1538332576228-eb5b4c4de6f5', pl: '1607427293702-036933bbf746', sg: '1525625293386-3f8f99389edd', my: '1566914447826-bf04e54bf1be', ae: '1512453979798-5ea266f8880c', mu: '1513415277900-a62401e19be4' };
-    var peek = $('#h4-peek'), canvas = $('#globe'), hov = null;
-    if (fine) canvas.addEventListener('pointermove', function (e) {
-      if (!g) return; var r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, best = null, bd = 22;
-      g.markers.forEach(function (m) { var p = g.project(m.v); if (p[2] <= .1) return; var d = Math.hypot(p[0] - x, p[1] - y); if (d < bd) { bd = d; best = { m: m, p: p }; } });
-      if (best) {
-        var d = DEST.filter(function (k) { return k.id === best.m.id; })[0];
-        if (hov !== d.id) { hov = d.id; $('#peek-img').style.backgroundImage = 'url(https://images.unsplash.com/photo-' + IMG[d.id] + '?auto=format&fit=crop&w=360&h=220&q=75)'; $('#peek-code').textContent = d.code + ' · ' + d.ll; $('#peek-name').textContent = d.name; $('#peek-ll').textContent = d.tag; g.active = d.id; g.arcTo(d.id); }
-        peek.style.transform = 'translate(' + (best.p[0] + 18) + 'px,' + (best.p[1] - 20) + 'px)'; peek.classList.add('on'); canvas.style.cursor = 'pointer';
-      } else if (hov) { hov = null; peek.classList.remove('on'); canvas.style.cursor = ''; g.active = 'de'; }
+    document.addEventListener('pointerdown', function (e) { if (!hov || fine) return; if (!card.contains(e.target) && e.target !== canvas) { overCard = false; close(true); } });
+    $('#dc-go').addEventListener('click', function (e) {
+      e.preventDefault(); var id = this.dataset.id, idx = DEST.findIndex(function (k) { return k.id === id; }), b = $$('.wpin')[idx];
+      overCard = false; close(true); $('#explore').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); if (b) setTimeout(function () { b.dispatchEvent(new Event('click')); }, 700);
     });
-    canvas.addEventListener('pointerleave', function () { hov = null; peek.classList.remove('on'); if (g) g.active = 'de'; });
-    canvas.addEventListener('click', function () { if (hov) { var b = $$('.wpin')[DEST.findIndex(function (k) { return k.id === hov; })]; $('#explore').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); if (b) setTimeout(function () { b.dispatchEvent(new Event('click')); }, 700); } });
-    var flown = false;
-    // scroll: the globe rises and grows as you "take off" into the map
-    var gl = $('#h4-globe'), cp = $('.h4__copy');
+    function setHover(id) { if (!id) { overCard = false; close(true); } }
+
+    // scroll: globe turns to Germany and zooms as the copy lifts away (transform/opacity only)
+    var gl = $('#h4-globe'), cp = $('.h4__copy'), tags = $$('.tag4', hero), flown = false;
     var sc = raf(function () {
-      if (reduce) return; var p = Math.min(1, scrollY / hero.offsetHeight);
-      gl.style.scale = (1 + p * .9).toFixed(3); gl.style.translate = (-p * 22) + '% ' + (-p * 10) + '%'; gl.style.opacity = (1 - p * .85).toFixed(3);
-      if (g) { if (p > .08 && !flown) { flown = true; g.focus(51, 10.4, 'de'); g.spin = 0; } else if (p < .02 && flown) { flown = false; g.spin = 0.035; g.focusing = false; } }
-      $$('.tag4', hero).forEach(function (t, k) { t.style.translate = '0 ' + (-p * (60 + k * 40)) + 'px'; t.style.opacity = 1 - p * 1.6; });
-      cp.style.translate = '0 ' + (-p * 120) + 'px'; cp.style.opacity = (1 - p * 1.2).toFixed(3);
+      if (reduce) return; var p = Math.min(1, Math.max(0, scrollY / hero.offsetHeight));
+      gl.style.scale = (1 + p * .6).toFixed(3); gl.style.translate = (-p * 16).toFixed(2) + '% ' + (-p * 6).toFixed(2) + '%'; gl.style.opacity = (1 - p * .85).toFixed(3);
+      if (g) { if (p > .08 && !flown) { flown = true; g.focus(51, 10.4); setHover(null); } else if (p < .03 && flown) { flown = false; g.release(); } }
+      tags.forEach(function (t, k) { t.style.translate = '0 ' + (-p * (60 + k * 40)).toFixed(1) + 'px'; t.style.opacity = (1 - p * 1.6).toFixed(3); });
+      cp.style.translate = '0 ' + (-p * 120).toFixed(1) + 'px'; cp.style.opacity = (1 - p * 1.2).toFixed(3);
     });
     addEventListener('scroll', sc, { passive: true });
   })();
@@ -201,28 +258,24 @@
     DEST.forEach(function (d, i) {
       var g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'wpin'); g.setAttribute('transform', 'translate(' + d.x + ' ' + d.y + ')');
       g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button'); g.setAttribute('aria-label', d.name);
-      var dx = d.x > 1150 ? -12 : 12, anchor = d.x > 1150 ? 'end' : 'start';
-      g.innerHTML = '<circle class="hit" r="16"/><circle class="p" r="9"/><circle class="c" r="5"/><text x="' + dx + '" y="-10" text-anchor="' + anchor + '">' + d.name.toUpperCase() + '</text>';
+      var left = d.x > 1180, nm = d.name === 'United Kingdom' ? 'UK' : d.name === 'United States' ? 'USA' : d.name;
+      g.innerHTML = '<circle class="hit" r="15" cy="-8"/><g class="wpin__s"><ellipse class="sh" rx="4" ry="1.6"/><circle class="ring" r="11" cy="-11"/>' +
+        '<path class="pin" d="M0 0C-1.6-3.2-6.2-6.8-6.2-11.2a6.2 6.2 0 1 1 12.4 0C6.2-6.8 1.6-3.2 0 0Z"/><circle class="eye" cy="-11.2" r="2.3"/></g>' +
+        '<g class="tag" transform="translate(' + (left ? -14 : 14) + ' -11)"><rect y="-12" height="24" rx="12"/><text y="1" dominant-baseline="middle"' + (left ? ' text-anchor="end"' : '') + '>' + nm.toUpperCase() + '</text></g>';
       g.addEventListener('click', function () { pick(i); });
-      if (fine) g.addEventListener('mouseenter', function () { pick(i); });
       g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } });
       pins.appendChild(g);
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', 'false');
       b.innerHTML = '<b>' + d.code + '</b>' + d.name; b.addEventListener('click', function () { pick(i); }); rail.appendChild(b);
     });
+    requestAnimationFrame(function () { $$('.wpin .tag', pins).forEach(function (t) { var tx = t.querySelector('text'), r = t.querySelector('rect'), w = tx.getComputedTextLength() + 22, end = tx.getAttribute('text-anchor') === 'end';
+      r.setAttribute('width', w); r.setAttribute('x', end ? -w + 11 : -11); }); });
     function arcPath(d) { var mx = (O.x + d.x) / 2, my = Math.min(O.y, d.y) - Math.abs(O.x - d.x) * .28 - 20; return 'M' + O.x + ' ' + O.y + ' Q ' + mx + ' ' + my + ' ' + d.x + ' ' + d.y; }
     function pick(i) {
       if (i === cur) return; var first = cur < 0, prev = cur; cur = i; var d = DEST[i];
       $$('.wpin', pins).forEach(function (p, k) { p.classList.toggle('on', k === i); });
       $$('button', rail).forEach(function (b, k) { b.setAttribute('aria-selected', k === i); });
       var rb = rail.children[i]; if (rb && rail.offsetParent && !first) rail.scrollTo({ left: rb.offsetLeft - 20, behavior: reduce ? 'auto' : 'smooth' });
-      // route draws from Chennai
-      route.setAttribute('d', arcPath(d)); var L = route.getTotalLength(); route.style.transition = 'none'; route.style.strokeDasharray = L; route.style.strokeDashoffset = L;
-      cancelAnimationFrame(anim); var t0 = performance.now(), D = reduce ? 1 : 1300;
-      (function f(n) { var k = Math.min(1, (n - t0) / D), e = 1 - Math.pow(1 - k, 3); route.style.strokeDashoffset = L * (1 - e);
-        var p = route.getPointAtLength(L * e), q = route.getPointAtLength(Math.min(L, L * e + 1)), a = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI + 90;
-        if (k >= 1) { var p0 = route.getPointAtLength(L - 1); a = Math.atan2(p.y - p0.y, p.x - p0.x) * 180 / Math.PI + 90; }
-        plane.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ') rotate(' + a + ')'); if (k < 1) anim = requestAnimationFrame(f); })(t0);
       // image: circular reveal from the pin's relative position
       var cx = (d.x / 1400 * 100).toFixed(0) + '%', cy = (d.y / 496 * 100).toFixed(0) + '%';
       ims.forEach(function (im, k) { im.classList.remove('prev'); if (k === prev) im.classList.add('prev'); im.style.setProperty('--cx', cx); im.style.setProperty('--cy', cy); im.classList.toggle('on', k === i); });
@@ -250,55 +303,26 @@
     { k: 'Prepare', t: 'Every document right, the first time.', why: 'APS, uni-assist, blocked account, scholarships, loans and your national (D) visa — checked the way a visa officer would check them.', svc: [3, 4, 6], cta: 'Get visa guidance' },
     { k: 'Go global', t: 'We don\'t disappear at the airport.', why: 'Housing, Anmeldung, residence permit, part-time work — and later, the Blue Card route that brings your family over.', svc: [5, 7, 8], cta: 'Start my journey' }
   ];
+  /* ---------------- 04 what we do — hover (desktop) / tap (touch) to change stage; no scroll dependency ---------------- */
   (function () {
-    var sec = $('#services'), pin = $('#w5-pin'), track = $('#w5-track'), bgs = $$('.w5__bg'), ims = $$('.w5__im'), word = $('#w5-word'), fillEl = $('#w5-fill'), plane = $('#w5-plane');
-    var cur = -1, N = STAGES.length;
-    STAGES.forEach(function (st, i) {
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'w5__stop'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', 'false');
-      b.style.left = (1 + i * 98 / (N - 1)) + '%';
-      b.innerHTML = '<i aria-hidden="true"></i><small>' + String(i + 1).padStart(2, '0') + '</small><span>' + st.k + '</span>';
-      b.addEventListener('click', function () { go(i, true); });
-      if (fine) b.addEventListener('mouseenter', function () { if (!sticky()) show(i); });
-      track.appendChild(b);
-    });
-    var stops = $$('.w5__stop', track);
-    function sticky() { return innerWidth > 900 && !reduce; }
+    var sec = $('#services'); if (!sec) return;
+    var chs = $$('.wd__ch', sec), btns = $$('.wd__rail button', sec), cur = 0;
+    function warm(i) { var im = chs[i] && chs[i].querySelector('img'); if (im && im.loading === 'lazy') im.loading = 'eager'; }
     function show(i) {
-      if (i === cur) return; var first = cur < 0, dir = i > cur ? 1 : -1; cur = i; var st = STAGES[i];
-      stops.forEach(function (b, k) { b.setAttribute('aria-selected', k === i); b.classList.toggle('done', k < i); });
-      var f = i / (N - 1); fillEl.style.transform = 'scaleX(' + f + ')'; plane.style.left = (1 + f * 98) + '%';
-      bgs.forEach(function (b, k) { b.classList.toggle('on', k === i); });
-      ims.forEach(function (m, k) { m.classList.remove('from-l', 'from-r'); if (k === i) { m.classList.add(dir > 0 ? 'from-r' : 'from-l'); void m.offsetWidth; } m.classList.toggle('on', k === i); });
-      $('#w5-count').textContent = String(i + 1).padStart(2, '0') + ' / 05';
-      var tx = $('#w5-text');
-      var fill = function () {
-        word.textContent = st.k; word.classList.remove('out');
-        $('#w5-eyebrow').textContent = 'STAGE ' + String(i + 1).padStart(2, '0') + ' · ' + st.k.toUpperCase();
-        $('#w5-title').textContent = st.t; $('#w5-why').textContent = st.why;
-        $('#w5-svc').innerHTML = st.svc.map(function (s, k) { var v = SERVICES[s]; return '<li style="animation-delay:' + (k * .08) + 's"><b>' + v[0] + '</b><span>' + v[1] + '</span></li>'; }).join('');
-        $('#w5-cta-t').textContent = st.cta; tx.classList.remove('out');
-      };
-      if (first || reduce) fill(); else { word.classList.add('out'); tx.classList.add('out'); setTimeout(fill, 260); }
+      if (i === cur) return; warm(i); cur = i;
+      chs.forEach(function (c, k) { c.classList.toggle('on', k === i); });
+      btns.forEach(function (b, k) { if (k === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
     }
-    // clicking a stop: on desktop scroll to that stage's slice of the pinned section; elsewhere just show it
-    function go(i, smooth) {
-      if (!sticky()) { show(i); return; }
-      var top = sec.offsetTop + (sec.offsetHeight - innerHeight) * (i / (N - 1)) + 2;
-      scrollTo({ top: top, behavior: smooth ? 'smooth' : 'auto' });
-    }
-    var onS = raf(function () {
-      if (!sticky()) return;
-      var r = sec.getBoundingClientRect(), span = sec.offsetHeight - innerHeight, p = Math.max(0, Math.min(1, -r.top / span));
-      show(Math.min(N - 1, Math.round(p * (N - 1) + .001)));
-      pin.style.setProperty('--p', p.toFixed(3));
-      document.body.classList.toggle('in-why', r.top <= 1 && r.bottom >= innerHeight - 1);
+    btns.forEach(function (b) {
+      var i = +b.dataset.i;
+      b.addEventListener('mouseenter', function () { if (fine) show(i); });
+      b.addEventListener('focus', function () { show(i); });
+      b.addEventListener('click', function () { show(i); });
     });
-    addEventListener('scroll', onS, { passive: true }); addEventListener('resize', onS);
-    track.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight') { e.preventDefault(); go(Math.min(N - 1, cur + 1), true); stops[cur + 1 < N ? cur + 1 : cur].focus(); } if (e.key === 'ArrowLeft') { e.preventDefault(); go(Math.max(0, cur - 1), true); } });
-    var sx = null; pin.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
-    pin.addEventListener('touchend', function (e) { if (sx === null || sticky()) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) show(Math.max(0, Math.min(N - 1, cur + (dx < 0 ? 1 : -1)))); sx = null; });
-    show(0); onS();
-    new IntersectionObserver(function (e, o) { if (e[0].isIntersecting) { $$('img', sec).forEach(function (im) { im.loading = 'eager'; }); o.disconnect(); } }, { rootMargin: '800px' }).observe(sec);
+    // preload all five stage images once the section is near, so hover swaps never wait
+    new IntersectionObserver(function (e, o) { if (e[0].isIntersecting) { chs.forEach(function (c, k) { warm(k); }); o.disconnect(); } }, { rootMargin: '600px' }).observe(sec);
+    // keep the floating "free plan" pill out of this section (CTA lives inside each stage)
+    new IntersectionObserver(function (e) { document.body.classList.toggle('in-why', e[0].isIntersecting); }, { threshold: .25 }).observe(sec);
   })();
 
   /* ---------------- 03 university discovery ---------------- */
@@ -309,10 +333,39 @@
       b.innerHTML = '<small>' + String(i + 1).padStart(2, '0') + ' · ' + u.city.toUpperCase() + '</small><span>' + u.s + '</span>';
       b.addEventListener('click', function () { show(i); }); strip.appendChild(b);
     });
-    var seen = {};
-    UNIV.forEach(function (u) { var k = u.x + ',' + u.y; if (seen[k]) return; seen[k] = 1;
-      var g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'pin'); g.dataset.k = k; g.setAttribute('transform', 'translate(' + u.x + ' ' + u.y + ')');
-      g.innerHTML = '<circle class="p" r="8"/><circle class="c" r="4.5"/><text x="10" y="4">' + u.city.toUpperCase() + '</text>'; pins.appendChild(g); });
+    /* Germany university map — same dataset + public/private system as the Explorer page */
+    var ALL = window.TC_UNIS || [], uById = {}, tip = $('#udm-tip'), svgM = $('.udm__svg'), hovT;
+    var cityLab = { Hamburg: 1, Berlin: 1, Munich: 1, Frankfurt: 1, Cologne: 1, Aachen: -1 };
+    var byCity = {};
+    ALL.forEach(function (u) { u._x = (u.lon - 3.5) * 30; u._y = (55.6 - u.lat) * 30; (byCity[u.city] = byCity[u.city] || []).push(u); uById[u.id] = u; });
+    Object.keys(byCity).forEach(function (c) { var g = byCity[c], cx = 0, cy = 0; g.forEach(function (u) { cx += u._x; cy += u._y; }); cx /= g.length; cy /= g.length;
+      g.forEach(function (u, k) { var a = -Math.PI / 2 + k * 2 * Math.PI / g.length, r = g.length > 1 ? 6 : 0; u._px = cx + Math.cos(a) * r; u._py = cy + Math.sin(a) * r; });
+      if (cityLab[c]) { var t = document.createElementNS(NS, 'text'); t.setAttribute('class', 'udm__city'); t.textContent = c.toUpperCase(); t.setAttribute('x', cx + (cityLab[c] > 0 ? 10 : -10)); t.setAttribute('y', cy + 2); if (cityLab[c] < 0) t.setAttribute('text-anchor', 'end'); $('#udm-cities').appendChild(t); } });
+    var feat = {}; UNIV.forEach(function (u, i) { feat[u.s.toLowerCase()] = i; });
+    ALL.forEach(function (u, k) {
+      var g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'umk' + (u.type === 'Private' ? ' pri' : '')); g.dataset.id = u.id;
+      g.setAttribute('transform', 'translate(' + u._px.toFixed(1) + ' ' + u._py.toFixed(1) + ')'); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'link');
+      g.setAttribute('aria-label', u.name + ', ' + u.city + ' — ' + u.type.toLowerCase() + ' university');
+      g.innerHTML = '<circle class="h" r="7"/><circle class="r" r="5.5"/><circle class="d" r="2.8"/>';
+      g.querySelector('.d').style.animationDelay = (.2 + k * .02) + 's'; pins.appendChild(g);
+    });
+    function tipShow(u) {
+      clearTimeout(hovT); var r = svgM.getBoundingClientRect(), box = $('#udm').getBoundingClientRect(), vb = svgM.viewBox.baseVal, s = r.width / vb.width;
+      var x = r.left - box.left + (u._px - vb.x) * s, y = r.top - box.top + (u._py - vb.y) * s;
+      tip.style.left = Math.max(120, Math.min(box.width - 120, x)) + 'px'; tip.style.top = y + 'px';
+      $('#udm-n').textContent = u.name; $('#udm-c').textContent = u.city + (u.state !== u.city ? ' · ' + u.state : '') + ' · Germany';
+      var t = $('#udm-t'); t.textContent = u.type === 'Public' ? 'Public' : 'Private'; t.className = u.type === 'Private' ? 'pri' : '';
+      $('#udm-im').style.backgroundImage = 'url(https://images.unsplash.com/photo-' + (u.img || '1467269204594-9661b134dd2b') + '?auto=format&fit=crop&w=160&h=160&q=75)';
+      tip.classList.add('on'); $$('.umk.hov', pins).forEach(function (m) { m.classList.remove('hov'); }); pins.querySelector('[data-id="' + u.id + '"]').classList.add('hov');
+    }
+    function tipHide() { hovT = setTimeout(function () { tip.classList.remove('on'); $$('.umk.hov', pins).forEach(function (m) { m.classList.remove('hov'); }); }, 60); }
+    function go(u) { stop(); if (feat[u.id] !== undefined) show(feat[u.id]); else { var to = 'universities.html?u=' + u.id; if (window.parent !== window && parent.__nav) parent.__nav(to); else location.href = to; } }
+    pins.addEventListener('pointerover', function (e) { var g = e.target.closest('.umk'); if (g) tipShow(uById[g.dataset.id]); });
+    pins.addEventListener('pointerout', function (e) { if (e.target.closest('.umk')) tipHide(); });
+    pins.addEventListener('focusin', function (e) { var g = e.target.closest('.umk'); if (g) tipShow(uById[g.dataset.id]); });
+    pins.addEventListener('focusout', tipHide);
+    pins.addEventListener('click', function (e) { var g = e.target.closest('.umk'); if (g) go(uById[g.dataset.id]); });
+    pins.addEventListener('keydown', function (e) { var g = e.target.closest('.umk'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(uById[g.dataset.id]); } });
     function words(t) { return t.split(' ').map(function (w, k) { return '<span class="w"><span style="animation-delay:' + k * .07 + 's">' + w + '</span></span>'; }).join(' '); }
     function show(i) {
       i = (i + UNIV.length) % UNIV.length; if (i === cur) return; var first = cur < 0, back = !first && i < cur, prev = cur; cur = i; var u = UNIV[i], giant = $('#ud-giant');
@@ -320,11 +373,12 @@
       var sb = strip.children[i]; if (!first) strip.scrollTo({ left: sb.offsetLeft - strip.clientWidth / 2 + sb.clientWidth / 2, behavior: reduce ? 'auto' : 'smooth' });
       bgs.forEach(function (b, k) { b.classList.remove('prev', 'back'); if (k === prev) b.classList.add('prev'); if (k === i && back) { b.classList.add('back'); } });
       requestAnimationFrame(function () { bgs.forEach(function (b, k) { b.classList.toggle('on', k === i); }); });
-      $$('.pin', pins).forEach(function (p) { p.classList.toggle('on', p.dataset.k === u.x + ',' + u.y); });
+      $$('.umk', pins).forEach(function (p) { var on = p.dataset.id === u.s.toLowerCase(); p.classList.toggle('on', on); if (on) pins.appendChild(p); });
       var fill = function () {
-        giant.textContent = u.s; giant.classList.remove('out');
+        giant.querySelectorAll('span').forEach(function (sp) { sp.textContent = u.s; }); giant.style.setProperty('--n', u.s.length); giant.classList.remove('out');
         $('#ud-idx').textContent = String(i + 1).padStart(2, '0') + ' / ' + String(UNIV.length).padStart(2, '0'); $('#ud-ll').textContent = u.ll;
-        $('#ud-name').innerHTML = words(u.name); $('#ud-city').textContent = u.city; $('#ud-state').textContent = u.state; $('#ud-badge').textContent = u.b;
+        $('#ud-name').innerHTML = words(u.name); $('#ud-city').textContent = u.city; $('#ud-state').textContent = u.state; $('#ud-state').hidden = $('#ud-sdot').hidden = u.state === u.city; $('#ud-badge').textContent = u.b; $('#ud-explore').href = 'universities.html?u=' + u.s.toLowerCase();
+        $('#ud-name').classList.toggle('long', u.name.length > 24);
         $('#ud-areas').innerHTML = u.areas.map(function (a, k) { return '<li style="animation-delay:' + (.25 + k * .07) + 's">' + a + '</li>'; }).join('');
       };
       if (first || reduce) fill(); else { giant.classList.add('out'); setTimeout(fill, 300); }
@@ -345,9 +399,43 @@
     sec.addEventListener('pointerdown', function () { sec.dataset.touched = 1; stop(); });
   })();
 
+  // giant initials: hover fills the outline (desktop only; CSS does the animation)
+  (function () { var gi = $('#ud-giant'); if (!gi || !fine) return;
+    gi.addEventListener('pointerenter', function () { gi.classList.add('lit'); }); gi.addEventListener('pointerleave', function () { gi.classList.remove('lit'); }); })();
+
   /* ---------------- loan partner marquee ---------------- */
   var mq = $('#marq'), logos = LOANS.map(function (k) { return '<img src="assets/img/loan/' + k + '.webp" alt="' + LOAN_NAMES[k] + '" width="150" height="60" loading="lazy">'; }).join('');
   mq.innerHTML = logos + logos.replace(/alt="[^"]*"/g, 'alt="" aria-hidden="true"');
+
+  /* ---------------- in-page links: offset for the fixed header, works inside the one-file preview too ---------------- */
+  (function () {
+    var hdr = $('#hdr'), links = $$('#hdr-nav a');
+    function go(id, push) {
+      var el = id === 'top' ? document.body : document.getElementById(id); if (!el) return false;
+      var y = id === 'top' ? 0 : el.getBoundingClientRect().top + scrollY - (hdr ? hdr.offsetHeight : 0) + 1;
+      window.__navLock = Date.now() + 1500; if (hdr) hdr.classList.remove('hide'); scrollTo({ top: Math.max(0, y), behavior: reduce ? 'auto' : 'smooth' });
+      if (push) try { history.replaceState(null, '', '#' + id); } catch (e) {}
+      // layout above may settle (lazy images, opening panels) during the smooth scroll — correct once at the end
+      if (id !== 'top') setTimeout(function () { var off = el.getBoundingClientRect().top - (hdr ? hdr.offsetHeight : 0); if (Math.abs(off) > 6) scrollBy({ top: off + 1, behavior: 'auto' }); }, reduce ? 50 : 1100);
+      return true;
+    }
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href^="#"]'); if (!a || e.defaultPrevented) return;
+      var id = a.getAttribute('href').slice(1); if (!id) return;
+      if (go(id, location.protocol !== 'about:')) e.preventDefault();
+    });
+    // active state: the nav link whose section sits under the header
+    var map = links.map(function (a) { return [a, document.getElementById(a.getAttribute('href').slice(1))]; }).filter(function (x) { return x[1]; });
+    var mark = raf(function () {
+      var line = (hdr ? hdr.offsetHeight : 0) + innerHeight * .3, cur = null;
+      map.forEach(function (x) { var r = x[1].getBoundingClientRect(); if (r.top <= line && r.bottom > line) cur = x[0]; });
+      links.forEach(function (a) { a.classList.toggle('on', a === cur); if (a === cur) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
+    });
+    addEventListener('scroll', mark, { passive: true }); mark();
+    var mb = $('#hdr-menu'), nav = $('#hdr-nav');
+    function menu(o) { document.body.classList.toggle('nav-open', o); mb.setAttribute('aria-expanded', o); mb.setAttribute('aria-label', o ? 'Close menu' : 'Open menu'); }
+    if (mb) { mb.addEventListener('click', function () { menu(!document.body.classList.contains('nav-open')); }); links.forEach(function (a) { a.addEventListener('click', function () { menu(false); }); }); addEventListener('keydown', function (e) { if (e.key === 'Escape') menu(false); }); }
+  })();
 
   /* ---------------- pathway progress ---------------- */
   var stepsWrap = $('#steps'), stepEls = $$('.step', stepsWrap);
@@ -375,28 +463,7 @@
   $('#q-next').addEventListener('click', function () { showQ(qi + 1); });
   showQ(0, true);
 
-  /* ---------------- FAQ: smooth accordion, one open at a time ---------------- */
-  var acc = $('#acc');
-  FAQ.forEach(function (f, i) {
-    acc.insertAdjacentHTML('beforeend', '<details' + (i === 0 ? ' open' : '') + '><summary><small>' + String(i + 1).padStart(2, '0') + '</small>' + f[0] + '<i aria-hidden="true"></i></summary><div class="ans"><p>' + f[1] + '</p></div></details>');
-  });
-  $$('details', acc).forEach(function (d) {
-    var sum = d.querySelector('summary'), ans = d.querySelector('.ans');
-    sum.addEventListener('click', function (e) {
-      e.preventDefault();
-      if (d.open) { close(d); } else {
-        $$('details[open]', acc).forEach(close);
-        d.open = true; if (reduce) return;
-        var h = ans.scrollHeight; ans.style.height = '0px'; requestAnimationFrame(function () { ans.style.height = h + 'px'; });
-        ans.addEventListener('transitionend', function t() { ans.style.height = ''; ans.removeEventListener('transitionend', t); });
-      }
-    });
-  });
-  function close(d) {
-    var ans = d.querySelector('.ans'); if (reduce) { d.open = false; return; }
-    ans.style.height = ans.scrollHeight + 'px'; requestAnimationFrame(function () { ans.style.height = '0px'; });
-    ans.addEventListener('transitionend', function t() { d.open = false; ans.style.height = ''; ans.removeEventListener('transitionend', t); });
-  }
+
 
   /* ---------------- 09 passport ---------------- */
   (function () {
@@ -407,6 +474,13 @@
     cover.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     new IntersectionObserver(function (e) { if (e[0].isIntersecting) { scene.classList.add('in'); setTimeout(open, reduce ? 0 : 1400); } }, { threshold: .55 }).observe(scene);
     $$('a[href="#begin"]').forEach(function (a) { a.addEventListener('click', function () { setTimeout(open, 700); }); });
+    (function () { // university of interest carried over from the University Explorer (?uni=…)
+      var uni = ''; try { uni = (new URLSearchParams(window.__Q || location.search).get('uni') || '').trim().slice(0, 120); } catch (e) {}
+      if (!uni) return;
+      $('#p-uni').value = uni; $('#p-uni-n').textContent = uni; $('#p-uni-box').hidden = false;
+      $('#p-uni-x').addEventListener('click', function () { $('#p-uni').value = ''; $('#p-uni-box').hidden = true; });
+      addEventListener('load', function () { setTimeout(function () { var b = $('#begin'); if (b) b.scrollIntoView({ behavior: 'auto' }); open(); }, 150); });
+    })();
     $('#p-name').addEventListener('input', function () { $('#pp-holder').textContent = (this.value.trim() || 'YOUR NAME').toUpperCase().slice(0, 24); });
     $('#p-from').addEventListener('change', function () { var cc = { India: '+91', UAE: '+971', 'Sri Lanka': '+94', Nepal: '+977', Bangladesh: '+880' }[this.value]; if (cc) $('#p-cc').value = cc; });
     function bad(id, c) { $(id).closest('.pf').classList.toggle('bad', c); return c; }
@@ -420,7 +494,7 @@
       if (x) { var f = $('.pf.bad input', form); if (f) f.focus(); return; }
       var dest = d.destination_choice || 'Germany';
       var payload = { name: d.name, email: d.email, phone: d.country_code + ' ' + d.phone_number,
-        destination: dest + ' | ' + d.study_level + ' | from ' + d.origin, study_level: d.study_level, origin: d.origin,
+        destination: dest + (d.university ? ' | University: ' + d.university : '') + ' | ' + d.study_level + ' | from ' + d.origin, university: d.university || '', study_level: d.study_level, origin: d.origin,
         from_name: 'Tutee Connect — Germany landing page', page: location.pathname + location.search, botcheck: d.botcheck };
       go.disabled = true; $('#p-go-t').textContent = 'Stamping your passport…';
       fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
@@ -428,7 +502,7 @@
         .then(function (res) {
           if (!res || !res.success) throw new Error((res && res.message) || '');
           $('#done-n').textContent = d.name.split(' ')[0]; book.classList.add('ok');
-          if (window.dataLayer) dataLayer.push({ event: 'generate_lead', lead_country: dest, lead_level: d.study_level, lead_origin: d.origin });
+          if (window.dataLayer) dataLayer.push({ event: 'generate_lead', lead_country: dest, lead_university: d.university || '', lead_level: d.study_level, lead_origin: d.origin });
           if (window.fbq) fbq('track', 'Lead');
         })
         .catch(function (err) { st.className = 'pass__status e'; st.textContent = err && err.message && err.message !== 'Failed to fetch' ? err.message : 'We couldn\'t send that just now. Please try again, or message us on WhatsApp.'; })
@@ -441,7 +515,7 @@
     if (fine && !reduce) {
       var c = $('#cursor'), ct = $('#cursor-t'), x = 0, y = 0, tx = 0, ty = 0, r;
       addEventListener('pointermove', function (e) { tx = e.clientX; ty = e.clientY; c.classList.add('on'); if (!r) r = requestAnimationFrame(function m() { x += (tx - x) * .22; y += (ty - y) * .22; c.style.transform = 'translate(' + x + 'px,' + y + 'px)'; r = Math.abs(tx - x) + Math.abs(ty - y) > .3 ? requestAnimationFrame(m) : null; }); }, { passive: true });
-      document.addEventListener('pointerover', function (e) { var t = e.target.closest('.hcta') ? null : e.target.closest('[data-cursor],.wpin,.ud__strip button,.svc__btn,#cover'); c.classList.toggle('big', !!t); ct.textContent = t ? (t.dataset.cursor || (t.matches('.wpin') ? 'Fly' : t.matches('#cover') ? 'Open' : 'View')) : ''; });
+      document.addEventListener('pointerover', function (e) { var t = e.target.closest('.hcta') ? null : e.target.closest('[data-cursor],.ud__strip button,.svc__btn,#cover'); c.classList.toggle('big', !!t); ct.textContent = t ? (t.dataset.cursor || (t.matches('#cover') ? 'Open' : 'View')) : ''; });
       document.addEventListener('pointerleave', function () { c.classList.remove('on'); });
     }
     var svg = $('#thread'), base = $('#thread-base'), live = $('#thread-live'), plane = $('#thread-plane'), main = $('#top'), L = 0;
@@ -452,9 +526,30 @@
       var gx = Math.max(24, (W - Math.min(W - 2 * 64, 1320)) / 2 - 34);
       var hx = Math.max(14, gx - 6);
       pts.push([hx, $('#hero').offsetHeight * .7]);
-      secs.slice(1).forEach(function (s) { side = 1 - side; pts.push([side ? hx + 14 : hx - 6, s.offsetTop + 40]); pts.push([side ? hx + 14 : hx - 6, s.offsetTop + s.offsetHeight - 40]); });
+      var mt = main.getBoundingClientRect().top;
+      var straight = false;
+      secs.slice(1).forEach(function (s) {
+        if (straight) { pts.push([hx, s.offsetTop + s.offsetHeight - 40, 0]); return; }
+        side = 1 - side;
+        if (s.id === 'pathway') {
+          // the journey thread becomes the pathway itself: it runs through the centre of every numbered milestone
+          var ns = $$('.step__n', s).map(function (n) { var r = n.getBoundingClientRect(); return [r.left + r.width / 2, r.top - mt + r.height / 2]; });
+          if (ns.length) {
+            pts.push([side ? hx + 14 : hx - 6, s.offsetTop + 40]);
+            pts.push([hx, ns[0][1] - 105, 0]); pts.push([ns[0][0], ns[0][1] - 45, 0]);
+            ns.forEach(function (c) { pts.push([ns[0][0], c[1], 0]); });
+            // after milestone 4: straight down, one short turn into the margin (clear of the CTA), then straight on down the page
+            var l4 = ns[ns.length - 1][1], cta = s.querySelector('.pathway__cta'), cy = cta ? cta.getBoundingClientRect().top - mt : l4 + 260;
+            pts.push([ns[0][0], Math.max(l4 + 70, cy - 120), 0]);
+            pts.push([hx, Math.max(l4 + 130, cy - 50), 0]);
+            straight = true; return;
+          }
+        }
+        pts.push([side ? hx + 14 : hx - 6, s.offsetTop + 40]); pts.push([side ? hx + 14 : hx - 6, s.offsetTop + s.offsetHeight - 40]);
+      });
       var d = 'M' + pts[0][0] + ' ' + pts[0][1];
-      for (var k = 1; k < pts.length; k++) { var a = pts[k - 1], b = pts[k], my = (a[1] + b[1]) / 2; d += ' C ' + a[0] + ' ' + my + ' ' + b[0] + ' ' + my + ' ' + b[0] + ' ' + b[1]; }
+      // bulge (3rd value) bows the segment sideways a little, so the route feels walked rather than ruled
+      for (var k = 1; k < pts.length; k++) { var a = pts[k - 1], b = pts[k], my = (a[1] + b[1]) / 2, bw = b[2] || 0; d += ' C ' + (a[0] + bw) + ' ' + my + ' ' + (b[0] + bw) + ' ' + my + ' ' + b[0] + ' ' + b[1]; }
       base.setAttribute('d', d); live.setAttribute('d', d); L = live.getTotalLength(); live.style.strokeDasharray = L; upd();
     }
     // the thread runs behind sections: draw it only in the gutters by clipping to section edges is overkill — it sits under content (z-index) and fades over text areas

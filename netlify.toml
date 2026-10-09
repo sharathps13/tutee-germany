@@ -25,6 +25,24 @@
   status = 200
   force = true
 
+
+# Explorer routes. A trailing slash ("/universities/") would make the page's
+# relative asset paths resolve under /universities/assets/… and 404 — so it is
+# normalised first. /study-in-germany/* are friendly aliases.
+[[redirects]]
+  from = "/universities/"
+  to = "/universities"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/study-in-germany/universities"
+  to = "/universities"
+  status = 301
+[[redirects]]
+  from = "/study-in-germany"
+  to = "/"
+  status = 301
+
 # Deep links such as /universities.html are real files, so no SPA catch-all is
 # wanted here — a bad URL should 404 rather than silently render the home page.
 
@@ -40,7 +58,7 @@
       default-src 'self'; \
       script-src 'self' 'sha256-dFqnkix/KyuQ/tR3B/FYwRtcbWXrtRW7VdscV/VFsmc='; \
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
-      img-src 'self' data: https://images.unsplash.com; \
+      img-src 'self' data: https://images.unsplash.com https://flagcdn.com; \
       font-src 'self' https://fonts.gstatic.com; \
       connect-src 'self' https://*.supabase.co; \
       form-action 'self'; \

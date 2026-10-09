@@ -67,8 +67,7 @@ W5 = [
 ]
 def exbgs():
     return "".join(f'<div class="ex__bg{" on" if k==0 else ""}">{img(i, alt, "100vw", "" if k==0 else "loading=\"lazy\"")}</div>' for k,(i,alt) in enumerate(CITIES))
-ARROW = ('<span class="ar" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">'
-         '<path d="M5 12h14M13 6l6 6-6 6"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>')
+ARROW = '<span class="ar" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>'
 DIAG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>'
 def svcimgs():
     out = []
@@ -77,11 +76,15 @@ def svcimgs():
         out.append(f'<div class="svc__img{" on" if k == 0 else ""}" data-i="{k}">{img(i, alt, "(max-width:900px) 100vw, 50vw", lazy)}</div>')
     return "\n          ".join(out)
 t = (ROOT / "src/index.tpl.html").read_text()
-t = t.replace("{{journeydots}}", (ROOT/"src/journey-dots.svg").read_text()).replace("{{dedots}}", (ROOT/"src/de-dots.svg").read_text()).replace("{{exbgs}}", exbgs()).replace("{{worlddots}}", (ROOT/"src/world-dots.svg").read_text()).replace("{{wmimgs}}", stack(DEST,"wm__im","(max-width:900px) 100vw, 45vw")).replace("{{w5imgs}}", stack(W5,"w5__bg","100vw")).replace("{{w5frames}}", stack(W5,"w5__im","(max-width:900px) 100vw, 45vw")).replace("{{udbgs}}", stack(UNIV,"ud__bg","100vw"))
+t = t.replace("{{deonly}}", (ROOT/"src/de-only.svg").read_text()).replace("{{journeydots}}", (ROOT/"src/journey-dots.svg").read_text()).replace("{{dedots}}", (ROOT/"src/de-dots.svg").read_text()).replace("{{exbgs}}", exbgs()).replace("{{worlddots}}", (ROOT/"src/world-dots.svg").read_text()).replace("{{wmimgs}}", stack(DEST,"wm__im","(max-width:900px) 100vw, 45vw")).replace("{{w5imgs}}", stack(W5,"w5__bg","100vw")).replace("{{w5frames}}", stack(W5,"w5__im","(max-width:900px) 100vw, 45vw")).replace("{{udbgs}}", stack(UNIV,"ud__bg","100vw"))
 t = t.replace("{{arrow}}", ARROW).replace("{{diag}}", DIAG).replace("{{svcimgs}}", svcimgs())
 t = re.sub(r"\{\{url (\S+) (\d+)(?: (\d+))?\}\}", lambda m: url(m[1], m[2], m[3]), t)
 t = re.sub(r"\{\{srcset (\S+) ([\d,]+)\}\}", lambda m: srcset(m[1], m[2].split(",")), t)
 t = re.sub(r"\{\{img ([^|]+)\|([^|]*)\|([^|]*)\|?([^}]*)\}\}", lambda m: img(m[1], m[2], m[3], m[4]), t)
 assert "{{" not in t, re.findall(r"\{\{[^}]*\}\}", t)
+t = t.replace("{{deonly}}", (ROOT/"src/de-only.svg").read_text())
 (ROOT / "index.html").write_text(t)
 print("ok", len(t))
+
+u = (ROOT/"src/universities.tpl.html").read_text().replace("{{deonly}}", (ROOT/"src/de-only.svg").read_text()).replace("{{arrow}}", ARROW)
+(ROOT/"universities.html").write_text(u)
