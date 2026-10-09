@@ -45,7 +45,11 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const DEFAULT_FROM = 'Tutee Connect Website <enquiries@tuteeconnect.com>';
 
 const MAX_BODY_BYTES = 16 * 1024;
-const SEND_TIMEOUT_MS = 20000;
+const SEND_TIMEOUT_MS = 4000;     // per attempt
+// Netlify stops a synchronous function at 10 s, so every retry shares this budget.
+const TOTAL_BUDGET_MS = 8500;
+const RETRYABLE = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -250,6 +254,31 @@ async function postJson(url, headers, body, timeoutMs) {
   }
 }
 
+
+/** Run a POST up to `attempts` times, retrying network errors and transient
+ * HTTP statuses, never past the shared time budget. Returns the last Response. */
+let budgetEnds = 0;
+async function withRetry(fn, attempts = 3) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) {
+      const wait = 300 * 2 ** (i - 1);
+      if (Date.now() + wait + 1000 > budgetEnds) break;
+      await sleep(wait);
+    }
+    try {
+      const res = await fn();
+      if (res.ok || !RETRYABLE.has(res.status) || i === attempts - 1) return res;
+      lastErr = new Error(`HTTP ${res.status}`);
+      console.warn(`enquiry: transient ${res.status}, retrying (${i + 1}/${attempts})`);
+    } catch (exc) {
+      lastErr = exc;
+      console.warn(`enquiry: request error ${exc?.name}, retrying (${i + 1}/${attempts})`);
+    }
+  }
+  throw lastErr || new Error('retry budget exhausted');
+}
+
 /** POST the message to Resend, returning the message id.
  *
  * The key is read here and nowhere else, and never appears in an error message,
@@ -258,8 +287,11 @@ async function sendViaResend(payload) {
   const key = (process.env.RESEND_API_KEY || '').trim();
   if (!key) throw new Error('server email is not configured (missing RESEND_API_KEY)');
 
-  const res = await postJson(RESEND_ENDPOINT, { Authorization: `Bearer ${key}` },
-    payload, SEND_TIMEOUT_MS);
+  // Retry transient failures (network, timeout, 429, 5xx). The idempotency key
+  // makes Resend deliver at most once even if an earlier attempt did land.
+  const idem = `enq-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const res = await withRetry(() => postJson(RESEND_ENDPOINT,
+    { Authorization: `Bearer ${key}`, 'Idempotency-Key': idem }, payload, SEND_TIMEOUT_MS));
 
   if (!res.ok) {
     // Resend explains refusals in the body — an unverified From domain, a
@@ -273,6 +305,29 @@ async function sendViaResend(payload) {
     const parsed = await res.json();
     return parsed?.id || '';
   } catch { return ''; }
+}
+
+
+/** Google Workspace: append the lead to a Google Sheet and email the business
+ * inbox, via an Apps Script web app (google-apps-script/Code.gs). Returns true
+ * when the script confirms, null when unconfigured. Single attempt: a retry
+ * could duplicate the row if the first call landed but timed out. */
+async function sendToGoogleSheet(f, country) {
+  const url = (process.env.LEADS_SHEET_URL || '').trim();
+  const secret = (process.env.LEADS_SHEET_SECRET || '').trim();
+  if (!url || !secret) return null;
+  const ex = Object.fromEntries(f.extras);
+  const res = await postJson(url, {}, {
+    secret, country: country || '', name: f.name, email: f.email, phone: f.phone,
+    destination: f.destination, source: f.from_name, page: f.page || '',
+    study_level: ex.study_level || '', origin: ex.origin || '', university: ex.university || '',
+  }, 8000);
+  let body = null;
+  try { body = await res.json(); } catch { /* ignore */ }
+  if (!res.ok || !body || !body.ok) {
+    throw new Error(`google sheet rejected the lead: HTTP ${res.status} ${body ? body.error || '' : ''}`);
+  }
+  return true;
 }
 
 /** Write the lead to Postgres. Supabase is the system of record, so this runs
@@ -294,9 +349,9 @@ async function storeInSupabase(f, country) {
     extras: Object.fromEntries(f.extras),
   };
 
-  const res = await postJson(`${url}/rest/v1/leads`,
+  const res = await withRetry(() => postJson(`${url}/rest/v1/leads`,
     { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'return=representation' },
-    row, SEND_TIMEOUT_MS);
+    row, SEND_TIMEOUT_MS), 2);
 
   if (!res.ok) {
     let detail = '';
@@ -314,6 +369,7 @@ const OK_MESSAGE = 'Profile submitted successfully! We will contact you soon.';
 /** Core logic, shared by the Netlify handler and the local dev server.
  * Returns { status, payload }. */
 export async function handle(rawBody, headers = {}) {
+  budgetEnds = Date.now() + TOTAL_BUDGET_MS;
   const fields = parsePayload(rawBody);
 
   const problem = validate(fields);
@@ -332,17 +388,25 @@ export async function handle(rawBody, headers = {}) {
     console.error(`enquiry: supabase insert failed: ${exc.message}`);
   }
 
-  // 2. notify the business inbox
-  let messageId = '';
-  let emailed = false;
+  // 2. Google Workspace: Sheet row + email from your own domain
+  let sheeted = false;
   try {
+    sheeted = (await sendToGoogleSheet(fields, country)) === true;
+  } catch (exc) {
+    console.error(`enquiry: google sheet failed: ${exc.message}`);
+  }
+
+  // 3. Resend email (optional; skipped when Google already emailed)
+  let messageId = '';
+  let emailed = sheeted;
+  if (!sheeted && (process.env.RESEND_API_KEY || '').trim()) try {
     messageId = await sendViaResend(buildEmail(fields, country));
     emailed = true;
   } catch (exc) {
     console.error(`enquiry: send refused: ${exc.message}`);
   }
 
-  if (!stored && !emailed) {
+  if (!stored && !emailed && !sheeted) {
     // nothing captured the enquiry anywhere — this is the only real failure
     return {
       status: 502,
@@ -376,6 +440,8 @@ export function health() {
     provider: 'resend',
     runtime: 'netlify-functions',
     resend_configured: Boolean((process.env.RESEND_API_KEY || '').trim()),
+    google_sheet_configured: Boolean((process.env.LEADS_SHEET_URL || '').trim()
+      && (process.env.LEADS_SHEET_SECRET || '').trim()),
     supabase_configured: Boolean((process.env.SUPABASE_URL || '').trim()
       && (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()),
     from: (process.env.MAIL_FROM || DEFAULT_FROM).trim(),
