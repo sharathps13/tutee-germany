@@ -497,14 +497,23 @@
         destination: dest + (d.university ? ' | University: ' + d.university : '') + ' | ' + d.study_level + ' | from ' + d.origin, university: d.university || '', study_level: d.study_level, origin: d.origin,
         from_name: 'Tutee Connect — Germany landing page', page: location.pathname + location.search, botcheck: d.botcheck };
       go.disabled = true; $('#p-go-t').textContent = 'Stamping your passport…';
-      // Netlify Forms: Netlify stores the lead and emails business@tuteeconnect.com.
+      // Two independent channels; the lead counts as received when EITHER confirms.
+      // Paste the Apps Script Web app URL (ends in /exec) here:
+      var LEADS_URL = 'https://script.google.com/macros/s/AKfycbwZFZ4OFJuVBG3xCAHiiGIf55-KnNX7HdPEI7JtMg53mZqoJ50tgUOzChs0quwGG9kR/exec';
       $('#p-full-phone').value = payload.phone; $('#p-page').value = payload.page;
       var body = new URLSearchParams(new FormData(form)).toString();
-      // Optional backup copy to Supabase via the function; never blocks the student.
-      try { fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(function () {}); } catch (e2) {}
-      fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
-        .then(function (r) {
-          if (!r.ok) throw new Error('');
+      function within(ms, pr) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
+      // Primary: straight from the browser to the Google Apps Script web app
+      // (Sheet row + email to business@). Works without Netlify Functions.
+      // no-cors: the browser can't read Google's reply, so a delivered request counts.
+      var viaSheet = LEADS_URL.indexOf('/exec') > 0
+        ? within(15000, fetch(LEADS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(Object.assign({ channel: 'web', country: 'Germany', source: payload.from_name }, payload)) }))
+        : Promise.reject(new Error('no sheet url'));
+      var viaForms = within(15000, fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+        .then(function (r) { if (!r.ok) throw new Error('forms'); }));
+      new Promise(function (ok, no) { var fails = 0; [viaSheet, viaForms].forEach(function (p) { p.then(ok, function () { if (++fails === 2) no(new Error('')); }); }); })
+        .then(function () {
           $('#done-n').textContent = d.name.split(' ')[0]; book.classList.add('ok');
           if (window.dataLayer) dataLayer.push({ event: 'generate_lead', lead_country: dest, lead_university: d.university || '', lead_level: d.study_level, lead_origin: d.origin });
           if (window.fbq) fbq('track', 'Lead');

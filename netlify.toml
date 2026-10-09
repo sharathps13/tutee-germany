@@ -60,7 +60,7 @@
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
       img-src 'self' data: https://images.unsplash.com https://flagcdn.com; \
       font-src 'self' https://fonts.gstatic.com; \
-      connect-src 'self' https://*.supabase.co; \
+      connect-src 'self' https://*.supabase.co https://script.google.com https://script.googleusercontent.com; \
       form-action 'self'; \
       base-uri 'self'; \
       object-src 'none'; \

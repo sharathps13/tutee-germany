@@ -20,7 +20,13 @@ const HEADERS  = ['Received', 'Country', 'Name', 'Email', 'Phone', 'Programme', 
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (err) { return out({ ok: false, error: 'bad json' }); }
-  if (d.secret !== SECRET) return out({ ok: false, error: 'unauthorised' });
+  // Website form posts directly (channel 'web'); the server function posts with SECRET.
+  const fromWeb = d.channel === 'web';
+  if (!fromWeb && d.secret !== SECRET) return out({ ok: false, error: 'unauthorised' });
+  if (d.botcheck) return out({ ok: true });                          // honeypot filled = bot
+  if (!d.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email || '')) return out({ ok: false, error: 'invalid' });
+  ['name','email','study_level','origin','university','destination','source','page','country']
+    .forEach(k => { if (d[k] != null) d[k] = String(d[k]).slice(0, 600).replace(/^[=+\-@]/, "'$&"); });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
