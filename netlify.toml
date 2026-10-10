@@ -84,12 +84,12 @@
 [[headers]]
   for = "/assets/js/*"
   [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
 
 [[headers]]
   for = "/assets/css/*"
   [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "public, max-age=300, stale-while-revalidate=86400"
 
 # Fonts and photographs are effectively content-addressed by name — they change
 # only when deliberately replaced — so they can be cached hard.

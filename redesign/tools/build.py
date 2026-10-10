@@ -18,7 +18,7 @@ def url(i, w, h=None, q=80):
 def srcset(i, ws): return ", ".join(f"{url(i,w)} {w}w" for w in ws)
 def img(i, alt, sizes, attrs=""):
     ws = [480, 800, 1200, 1600, 2200] if "100vw" in sizes else [320, 640, 960, 1400]
-    if sizes.endswith("px") and "," not in sizes: ws = [160, 320]
+    if sizes.endswith("px") and "," not in sizes: ws = [400, 800, 1200]  # small cards: enough pixels for 2–3x screens + hover zoom
     return (f'<img src="{url(i, ws[-2])}" srcset="{srcset(i, ws)}" sizes="{sizes}" alt="{alt}" decoding="async" {attrs}>').replace(" >", ">")
 CITIES = [  # university explorer backgrounds, same order as CITIES in app.js
  ("1577462281852-279bf4986f7b","Munich's Marienplatz and town hall lit up at night"),

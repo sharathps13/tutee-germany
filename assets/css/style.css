@@ -1548,3 +1548,166 @@ body.in-why .pill{transform:translate(-50%,170%)}
 .brand__plate{position:relative}
 .brand__plate::before{content:"";position:absolute;inset:-14px -22px;z-index:-1;background:radial-gradient(closest-side,rgba(251,246,234,.85),rgba(251,246,234,.45) 60%,rgba(251,246,234,0));filter:blur(2px)}
 .brand{isolation:isolate}
+
+/* ===== v42 — premium teal-charcoal glass header + frosted logo chip (no gold) ===== */
+.hdr,.hdr.solid{background:linear-gradient(180deg,rgba(14,46,46,.58) 0%,rgba(9,30,31,.46) 60%,rgba(8,24,25,.34) 100%);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);border-bottom:1px solid rgba(255,255,255,.07);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 18px 40px -28px rgba(0,0,0,.75)}
+.hdr::before{background:linear-gradient(100deg,rgba(255,255,255,.06),rgba(255,255,255,0) 32%,rgba(120,190,180,.05) 72%,rgba(255,255,255,0))}
+.hdr::after{background:linear-gradient(90deg,transparent,rgba(160,215,205,.22) 25%,rgba(160,215,205,.22) 75%,transparent)}
+.hdr nav a::after{background:rgba(190,230,222,.85)}
+/* v43 — the logo PNG is genuinely transparent; no chip/box. A soft, feathered light pool in the
+   glass behind it (not a panel, nothing applied to the logo) lifts the dark teal/maroon lettering. */
+.brand__plate{position:relative;display:inline-block;padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.brand__plate::before{content:none}
+.brand__plate img{display:block;filter:none;opacity:1}
+.brand{isolation:isolate}
+
+/* ===== v44 — no glass: cinematic gradient that continues the hero (#02080a + teal globe light) ===== */
+.hdr,.hdr.solid{backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:0;box-shadow:none;
+  background:
+    radial-gradient(70% 160% at 62% -60%,rgba(26,74,72,.42) 0%,rgba(26,74,72,0) 70%),
+    linear-gradient(90deg,rgba(2,8,10,.55) 0%,rgba(2,8,10,0) 35%),
+    linear-gradient(180deg,rgba(11,38,39,.92) 0%,rgba(7,24,26,.86) 45%,rgba(2,8,10,.0) 100%)}
+.hdr::before{background:none}
+.hdr::after{background:none}
+/* no hard bottom edge: line removed, bottom tone matches hero top (#02080a) */
+.brand__plate,.brand__plate::before{background:none;box-shadow:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+.brand__plate::before{content:none}
+/* once scrolled past the hero, keep the same palette but fully opaque so nav stays readable over light sections */
+.hdr.solid{background:radial-gradient(70% 160% at 62% -60%,rgba(26,74,72,.42) 0%,rgba(26,74,72,0) 70%),linear-gradient(180deg,#0b2627 0%,#071a1b 100%)}
+/* v46 — behind the logo the gradient deepens to the hero's own near-black (#02080a), so the
+   maroon/teal lettering separates from the teal; it widens smoothly into teal — no panel, no light. */
+.hdr{background:
+    radial-gradient(60% 150% at 62% -60%,rgba(26,74,72,.40) 0%,rgba(26,74,72,0) 70%),
+    linear-gradient(90deg,rgba(2,8,10,.96) 0%,rgba(2,8,10,.80) 14%,rgba(2,8,10,.35) 28%,rgba(2,8,10,0) 42%),
+    linear-gradient(180deg,rgba(11,38,39,.90) 0%,rgba(7,24,26,.82) 45%,rgba(2,8,10,0) 100%)}
+.hdr.solid{background:
+    radial-gradient(60% 150% at 62% -60%,rgba(26,74,72,.42) 0%,rgba(26,74,72,0) 70%),
+    linear-gradient(90deg,#02080a 0%,#03100f 14%,#071c1d 30%,#0a2425 50%,#0a2223 75%,#06171a 100%)}
+
+/* v47 — Begin: less dead space above the heading so heading + passport frame together */
+.pp{padding-top:clamp(3rem,7vh,5.5rem)}
+.pp__head{margin-bottom:clamp(1.6rem,3.5vh,3rem)}
+.pp__head .lead{margin-bottom:0}
+@media (min-width:861px) and (max-height:860px){
+  .pp__head h2{font-size:clamp(2.4rem,7vh,3.6rem)}
+  .pp__head .lead{font-size:1rem}
+  .pp__head{margin-bottom:1.4rem}
+}
+
+/* v48 — short desktop screens: scale the open passport so heading + whole passport frame together */
+@media (min-width:861px) and (max-height:820px){ .pp__scene{zoom:.84} .pp{padding-top:2.5rem} }
+
+/* ===== v49 — passport form: custom dropdowns, live validation, WhatsApp panel ===== */
+.dd-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0;pointer-events:none;overflow:hidden;clip:rect(0 0 0 0)}
+.dd{position:relative}
+.dd__btn{width:100%;height:48px;display:flex;align-items:center;gap:.55rem;border:0;border-bottom:1.5px solid #d9cfbc;background:transparent;padding:0 .1rem;font:600 1.02rem/1 var(--mono);color:var(--teal-deep);cursor:pointer;text-align:left;transition:border-color .3s}
+.dd__v{display:flex;align-items:center;gap:.5rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd__chev{flex:none;color:#760d0d;transition:transform .35s var(--ease)}
+.dd.open .dd__chev{transform:rotate(180deg)}
+.dd__btn:hover{border-color:#c9b99c}
+.dd__btn:focus-visible,.dd.open .dd__btn{outline:none;border-color:var(--orange)}
+.dd__pop{position:absolute;left:0;top:calc(100% + 8px);z-index:30;min-width:100%;background:#fffdf8;border:1px solid rgba(18,58,58,.14);border-radius:14px;box-shadow:0 24px 48px -20px rgba(7,26,26,.45),0 4px 12px -6px rgba(7,26,26,.18);padding:6px;opacity:0;transform:translateY(-6px) scale(.98);transform-origin:top left;transition:opacity .18s ease,transform .22s var(--ease)}
+.dd.up .dd__pop{top:auto;bottom:calc(100% + 8px);transform-origin:bottom left}
+.dd.in .dd__pop{opacity:1;transform:none}
+.dd__l{list-style:none;margin:0;padding:0;max-height:min(260px,42vh);overflow:auto;overscroll-behavior:contain;outline:none}
+.dd__l li{display:flex;align-items:center;gap:.6rem;padding:.62rem .7rem;border-radius:9px;font:500 .95rem/1.2 var(--sans,inherit);color:var(--teal-deep);cursor:pointer;transition:background .15s,color .15s}
+.dd__l li.act{background:rgba(18,58,58,.07)}
+.dd__l li[aria-selected="true"]{background:rgba(118,13,13,.07);color:#760d0d;font-weight:650}
+.dd__t{flex:1;white-space:nowrap}
+.dd__c{font:600 .85rem/1 var(--mono);color:#6d7b78}
+.dd__l li[aria-selected="true"] .dd__c{color:#760d0d}
+.dd__tick{flex:none;color:#760d0d;opacity:0;transform:scale(.6);transition:opacity .2s,transform .2s}
+.dd__l li[aria-selected="true"] .dd__tick{opacity:1;transform:none}
+.fl{flex:none;border-radius:2.5px;box-shadow:0 0 0 1px rgba(7,26,26,.12)}
+.dd__s{display:flex;align-items:center;gap:.5rem;margin:2px 2px 6px;padding:0 .7rem;height:38px;border-radius:9px;background:rgba(18,58,58,.05);color:#6d7b78}
+.dd__s input{flex:1;height:100%;border:0!important;background:transparent;font:500 .9rem/1 var(--sans,inherit)!important;color:var(--teal-deep);padding:0!important}
+.dd__s input:focus{outline:none}
+.dd__none{margin:0;padding:.7rem;font-size:.85rem;color:#8a8f8c}
+.dd--cc .dd__pop{width:290px}
+.dd--cc .dd__btn{gap:.35rem}
+.ph2{grid-template-columns:104px 1fr}
+@media (max-width:520px){.dd--cc .dd__pop{width:min(290px,calc(100vw - 48px))}}
+/* validation */
+.pf .err{font-weight:600;letter-spacing:.005em;color:#b3261e}
+.pf.bad input,.pf.bad .dd__btn{border-color:#c8382a}
+.pf.ok input{border-color:#2a7a62}
+.pf.ok>label::after{content:"";display:inline-block;width:12px;height:12px;margin-left:.4rem;vertical-align:-1px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%232a7a62'/%3E%3Cpath d='M4.6 8.3l2.2 2.1 4.6-4.6' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;animation:okpop .3s var(--ease)}
+@keyframes okpop{from{transform:scale(.4);opacity:0}}
+/* WhatsApp */
+.wa{position:fixed;right:1.5rem;bottom:1.5rem;z-index:61;width:auto;height:auto;display:block;background:none;box-shadow:none;transform:none;border-radius:0;pointer-events:none}
+.wa:hover{transform:none}
+.wa__fab{pointer-events:auto;position:relative;width:60px;height:60px;border-radius:50%;border:0;display:grid;place-items:center;background:#25d366;cursor:pointer;box-shadow:0 14px 30px -12px rgba(37,211,102,.7),0 0 0 0 rgba(37,211,102,.35);transform:scale(0) rotate(-20deg);transition:transform .6s var(--ease),box-shadow .35s}
+.wa.on .wa__fab{transform:none}
+.wa__fab svg{width:32px;height:32px}
+.wa__fab:hover{transform:scale(1.07);box-shadow:0 18px 36px -12px rgba(37,211,102,.8),0 0 0 8px rgba(37,211,102,.14)}
+.wa__fab:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.wa__fab svg path:nth-child(1){fill:#fff}.wa__fab svg path:nth-child(2){fill:#25d366}
+.wa__tip{position:absolute;right:72px;bottom:15px;white-space:nowrap;padding:.5rem .8rem;border-radius:10px;background:#fffdf8;color:var(--teal-deep);font:600 .82rem/1 var(--sans,inherit);box-shadow:0 12px 28px -14px rgba(0,0,0,.5);opacity:0;transform:translateX(6px);transition:opacity .2s,transform .25s var(--ease)}
+.wa.on .wa__fab:hover+.wa__tip,.wa.on .wa__fab:focus-visible+.wa__tip{opacity:1;transform:none}
+.wa__fab{order:2}.wa__tip{order:1}
+.wa.open .wa__tip{opacity:0!important}
+.wa__panel{pointer-events:auto;position:absolute;right:0;bottom:76px;width:min(320px,calc(100vw - 32px));background:#fffdf8;border-radius:18px;overflow:hidden;box-shadow:0 30px 60px -24px rgba(0,0,0,.6),0 0 0 1px rgba(18,58,58,.08);transform-origin:bottom right;animation:wapop .28s var(--ease)}
+@keyframes wapop{from{opacity:0;transform:translateY(8px) scale(.96)}}
+.wa__top{display:flex;align-items:center;gap:.7rem;padding:.95rem 1rem;background:linear-gradient(135deg,#0b2828,#123a3a);color:#fff}
+.wa__top svg{flex:none;width:34px;height:34px}
+.wa__top b{display:block;font-size:.95rem}
+.wa__top span{display:block;font-size:.74rem;opacity:.75;margin-top:.15rem}
+.wa__x{margin-left:auto;align-self:flex-start;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:1.2rem;line-height:1;cursor:pointer}
+.wa__x:hover{background:rgba(255,255,255,.22)}
+.wa__msg{margin:1rem 1rem .9rem;padding:.8rem .9rem;border-radius:4px 14px 14px 14px;background:#eef5f1;color:#1d3b36;font-size:.9rem;line-height:1.45}
+.wa__go{display:flex;align-items:center;justify-content:center;gap:.5rem;margin:0 1rem 1rem;height:46px;border-radius:999px;background:#25d366;color:#053b1d;font-weight:700;text-decoration:none;transition:filter .2s,transform .2s}
+.wa__go:hover{filter:brightness(1.05);transform:translateY(-1px)}
+@media (max-width:760px){.wa{display:none}}
+@media (prefers-reduced-motion:reduce){.dd__pop,.wa__fab,.wa__panel,.dd__chev{transition:none;animation:none}}
+.ph2{grid-template-columns:116px 1fr}
+.pf .ph2{grid-template-columns:112px 1fr}
+.dd--cc .dd__btn{font-size:.98rem}
+.wa__tip{right:74px;bottom:18px}
+.wa.on:has(.wa__fab:hover) .wa__tip,.wa.on:has(.wa__fab:focus-visible) .wa__tip{opacity:1;transform:none}
+
+/* v51 — testimonial: SVG star rating with a staggered fill, tag, editorial quote mark */
+.qtop{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.qcard .stars{display:inline-flex;gap:4px;letter-spacing:0;font-size:0}
+.qcard .stars svg{width:17px;height:17px;fill:var(--orange);opacity:.25;transform:scale(.6)}
+.qcard.rate .stars svg{animation:starin .5s var(--ease) forwards}
+.qcard.rate .stars svg:nth-child(2){animation-delay:.07s}.qcard.rate .stars svg:nth-child(3){animation-delay:.14s}.qcard.rate .stars svg:nth-child(4){animation-delay:.21s}.qcard.rate .stars svg:nth-child(5){animation-delay:.28s}
+@keyframes starin{0%{opacity:.25;transform:scale(.6)}60%{opacity:1;transform:scale(1.18)}100%{opacity:1;transform:scale(1)}}
+.qtag{display:inline-flex;align-items:center;gap:.45rem;padding:.38rem .75rem .38rem .6rem;border-radius:999px;border:1px solid rgba(118,13,13,.22);background:rgba(118,13,13,.05);color:var(--maroon,#760d0d);font:700 .68rem/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;transition:opacity .3s}
+.qtag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange)}
+.qcard.out .qtag{opacity:0}
+.qmark{display:block;width:46px;height:auto;margin:0 0 .9rem -2px;fill:var(--maroon,#760d0d);opacity:.9;transform-origin:left bottom;transition:transform .5s var(--ease),opacity .4s}
+.qcard.out .qmark{transform:translateY(6px) scale(.92);opacity:.3}
+.qcard .qmark+blockquote::before,.qcard blockquote::before{content:none}
+@media (prefers-reduced-motion:reduce){.qcard .stars svg{opacity:1;transform:none;animation:none!important}}
+.qmark{width:36px;opacity:.8}
+
+
+
+
+
+/* v67 — counselling-request confirmation (replaces "Visa granted") */
+.pp__done{padding:1.4rem 1.4rem 1.3rem;border-radius:16px;background:linear-gradient(180deg,#eef6f1,#e6f1ea);border:1px solid rgba(20,92,52,.14);color:#1d3b33;font-size:.93rem;line-height:1.6;outline:none}
+.book.ok .pp__done{display:block;animation:doneIn .7s var(--ease) both}
+.pp__done>*{animation:doneIn .6s var(--ease) both}
+.pp__dt{animation-delay:.25s!important}.pp__done p:nth-of-type(1){animation-delay:.35s!important}.pp__done p:nth-of-type(2){animation-delay:.45s!important}.pp__next{animation-delay:.55s!important}
+@keyframes doneIn{from{opacity:0;transform:translateY(8px)}}
+.pp__tick{width:44px;height:44px;display:block;margin-bottom:.8rem}
+.pp__tick circle{fill:none;stroke:#2a7a62;stroke-width:2.5;stroke-dasharray:151;stroke-dashoffset:151;animation:tkc .7s .1s var(--ease) forwards}
+.pp__tick path{fill:none;stroke:#2a7a62;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:36;stroke-dashoffset:36;animation:tkc .45s .65s var(--ease) forwards}
+@keyframes tkc{to{stroke-dashoffset:0}}
+.pp__dt{font:400 1.45rem/1.15 var(--display);color:var(--teal-deep);margin:0 0 .55rem;letter-spacing:-.01em}
+.pp__done p{margin:0 0 .5rem}
+.pp__next{margin-top:.9rem!important;padding-top:.8rem;border-top:1px solid rgba(20,92,52,.14);font-size:.88rem}
+.pp__next span{color:#5d7068}
+.pp__done a{color:#145c34;font-weight:800;text-underline-offset:3px}
+@media (prefers-reduced-motion:reduce){.pp__done,.pp__done>*,.pp__tick *{animation:none!important;stroke-dashoffset:0!important}}
+
+/* v68 perf — loops pause off screen; heavy layers hinted */
+.is-off,.is-off *,.is-off *::before,.is-off *::after{animation-play-state:paused!important}
+#globe{will-change:auto;contain:strict}
+.h4__globe{contain:layout paint}
+/* perf: the expanding CTA band now animates a clip (paint only) instead of its width (layout every frame) */
+.band__frame{width:100%!important;clip-path:inset(0 calc(var(--w,30%) / 2) round var(--br,28px));transition:clip-path .12s linear}
+@media (max-width:760px){.band__frame{clip-path:inset(0 calc(var(--w,12%) / 2) round var(--br,28px))}}
+.st__media .ph img{width:100%;height:100%;object-fit:cover}
+.qcard blockquote{min-height:6.4em}

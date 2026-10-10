@@ -56,8 +56,8 @@
     ['Can my family relocate with me to Germany?', 'It\'s possible in limited cases while you study, but you must prove enough money and living space for everyone, which is hard on a student budget. The family route becomes much easier once you hold an EU Blue Card or skilled-worker permit: spouses of Blue Card holders don\'t need to show German skills and may work.'],
     ['How long can I stay and work after graduation?', 'Graduates can get an 18-month residence permit to look for a job matching their qualification, and may work in any job while searching. The usual next step is an EU Blue Card (a minimum gross salary set each year, lower for shortage occupations and recent graduates) or a skilled-worker residence permit. Permanent settlement can follow after as little as 21 months on a Blue Card with B1 German, or two years for graduates of German universities.']
   ];
-  var LOANS = ['hdfc-credila', 'icici', 'axis', 'avanse', 'auxilo', 'idfc', 'incred', 'union', 'mpower', 'prodigy'];
-  var LOAN_NAMES = { 'hdfc-credila': 'HDFC Credila', icici: 'ICICI Bank', axis: 'Axis Bank', avanse: 'Avanse', auxilo: 'Auxilo', idfc: 'IDFC FIRST Bank', incred: 'InCred', union: 'Union Bank of India', mpower: 'MPOWER Financing', prodigy: 'Prodigy Finance' };
+  var LOANS = ['hdfc-credila', 'icici', 'axis', 'avanse', 'auxilo', 'idfc', 'incred', 'union', 'mpower', 'prodigy', 'tata-capital', 'poonawalla'];
+  var LOAN_NAMES = { 'hdfc-credila': 'HDFC Credila', icici: 'ICICI Bank', axis: 'Axis Bank', avanse: 'Avanse', auxilo: 'Auxilo', idfc: 'IDFC FIRST Bank', incred: 'InCred', union: 'Union Bank of India', mpower: 'MPOWER Financing', prodigy: 'Prodigy Finance', 'tata-capital': 'Tata Capital', poonawalla: 'Poonawalla Fincorp' };
 
   /* ---------------- hero entrance ---------------- */
   requestAnimationFrame(function () { $('#hero').classList.add('in'); });
@@ -67,7 +67,7 @@
   var onScroll = raf(function () {
     var y = scrollY, past = y > $('#hero').offsetHeight * .75;
     hdr.classList.toggle('solid', y > 40);
-    if (y > 500 && y > lastY + 4 && !(window.__navLock > Date.now())) hdr.classList.add('hide'); else if (y < lastY - 4) hdr.classList.remove('hide');
+    if (y > 500 && y > lastY + 4 && !(window.__navLock > Date.now())) hdr.classList.add('hide'); else if (y < lastY - 4 && !(window.__navLock > Date.now())) hdr.classList.remove('hide');
     [pill, mbar].forEach(function (el) { el.classList.toggle('on', past && !formOn); });
     wa.classList.toggle('on', past);
     lastY = y;
@@ -275,7 +275,7 @@
       if (i === cur) return; var first = cur < 0, prev = cur; cur = i; var d = DEST[i];
       $$('.wpin', pins).forEach(function (p, k) { p.classList.toggle('on', k === i); });
       $$('button', rail).forEach(function (b, k) { b.setAttribute('aria-selected', k === i); });
-      var rb = rail.children[i]; if (rb && rail.offsetParent && !first) rail.scrollTo({ left: rb.offsetLeft - 20, behavior: reduce ? 'auto' : 'smooth' });
+      var rb = rail.children[i]; if (!first && rb && rail.offsetParent) rail.scrollTo({ left: rb.offsetLeft - 20, behavior: reduce ? 'auto' : 'smooth' });
       // image: circular reveal from the pin's relative position
       var cx = (d.x / 1400 * 100).toFixed(0) + '%', cy = (d.y / 496 * 100).toFixed(0) + '%';
       ims.forEach(function (im, k) { im.classList.remove('prev'); if (k === prev) im.classList.add('prev'); im.style.setProperty('--cx', cx); im.style.setProperty('--cy', cy); im.classList.toggle('on', k === i); });
@@ -404,19 +404,45 @@
     gi.addEventListener('pointerenter', function () { gi.classList.add('lit'); }); gi.addEventListener('pointerleave', function () { gi.classList.remove('lit'); }); })();
 
   /* ---------------- loan partner marquee ---------------- */
-  var mq = $('#marq'), logos = LOANS.map(function (k) { return '<img src="assets/img/loan/' + k + '.webp" alt="' + LOAN_NAMES[k] + '" width="150" height="60" loading="lazy">'; }).join('');
-  mq.innerHTML = logos + logos.replace(/alt="[^"]*"/g, 'alt="" aria-hidden="true"');
+  // partners whose logo file may not be in the loan image folder yet: shown only once the file loads
+  var OPTIONAL = { 'tata-capital': 1, poonawalla: 1 };
+  var mq = $('#marq'), shownLoans = LOANS.filter(function (k) { return !OPTIONAL[k]; });
+  function renderLoans() {
+    var logos = shownLoans.map(function (k) { return '<img src="assets/img/loan/' + k + '.webp" alt="' + LOAN_NAMES[k] + '" width="150" height="60" loading="lazy">'; }).join('');
+    mq.innerHTML = logos + logos.replace(/alt="[^"]*"/g, 'alt="" aria-hidden="true"');
+  }
+  renderLoans();
+  Object.keys(OPTIONAL).forEach(function (k) {
+    var t = new Image(); t.onload = function () { shownLoans = LOANS.filter(function (x) { return !OPTIONAL[x] || OPTIONAL[x] === 2 || x === k; }); OPTIONAL[k] = 2; renderLoans(); };
+    t.src = 'assets/img/loan/' + k + '.webp';
+  });
 
   /* ---------------- in-page links: offset for the fixed header, works inside the one-file preview too ---------------- */
   (function () {
     var hdr = $('#hdr'), links = $$('#hdr-nav a');
     function go(id, push) {
       var el = id === 'top' ? document.body : document.getElementById(id); if (!el) return false;
-      var y = id === 'top' ? 0 : el.getBoundingClientRect().top + scrollY - (hdr ? hdr.offsetHeight : 0) + 1;
-      window.__navLock = Date.now() + 1500; if (hdr) hdr.classList.remove('hide'); scrollTo({ top: Math.max(0, y), behavior: reduce ? 'auto' : 'smooth' });
+      // a section may name the exact point to frame (e.g. Begin frames its heading + passport, not its top padding)
+      var anchor = el.querySelector && el.querySelector('[data-scroll-anchor]'); if (anchor) el = anchor;
+      var gap = anchor ? 20 : 0, frameEnd = anchor && document.querySelector(anchor.getAttribute('data-scroll-anchor') || '#_none'), hideHdr = false;
+      // frame a whole composition (heading → passport): centre it in the viewport; if it only fits with the
+      // header tucked away, tuck it (it returns on the next upward scroll, as everywhere else).
+      // Measured from layout boxes (not the passport's entrance transform), so it is stable before/after it opens.
+      function target() {
+        var hh = hdr ? hdr.offsetHeight : 0;
+        if (id === 'top') return { y: 0, hide: false };
+        var top = el.getBoundingClientRect().top + scrollY;
+        if (!frameEnd) return { y: top - hh - gap + 1, hide: false };
+        var H = frameEnd.getBoundingClientRect().bottom + scrollY - top, vh = innerHeight;
+        if (H <= vh - hh - 24) return { y: top - hh - (vh - hh - H) / 2, hide: false };
+        if (H <= vh - 8) return { y: top - (vh - H) / 2, hide: true };
+        return { y: top - 12, hide: true };
+      }
+      var t = target(), y = t.y; hideHdr = t.hide;
+      window.__navLock = Date.now() + 1500; if (hdr) hdr.classList.toggle('hide', hideHdr); scrollTo({ top: Math.max(0, y), behavior: reduce ? 'auto' : 'smooth' });
       if (push) try { history.replaceState(null, '', '#' + id); } catch (e) {}
       // layout above may settle (lazy images, opening panels) during the smooth scroll — correct once at the end
-      if (id !== 'top') setTimeout(function () { var off = el.getBoundingClientRect().top - (hdr ? hdr.offsetHeight : 0); if (Math.abs(off) > 6) scrollBy({ top: off + 1, behavior: 'auto' }); }, reduce ? 50 : 1100);
+      if (id !== 'top') [reduce ? 50 : 1100, reduce ? 300 : 1900].forEach(function (ms) { setTimeout(function () { var t2 = target(); if (hdr) hdr.classList.toggle('hide', t2.hide); if (Math.abs(t2.y - scrollY) > 6) scrollTo({ top: Math.max(0, t2.y), behavior: 'auto' }); window.__navLock = Date.now() + 400; }, ms); });
       return true;
     }
     document.addEventListener('click', function (e) {
@@ -448,15 +474,16 @@
 
   /* ---------------- stories ---------------- */
   var qi = 0, qt, qcard = $('#qcard'), dots = $('#qdots');
+  var QTAGS = ['Parent experience', 'Visa guidance', 'Arrival support', 'Visa guidance', 'Education loans', 'Career pathway'];
   STORIES.forEach(function (s, i) {
     var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Story ' + (i + 1) + ': ' + s[1]); b.innerHTML = '<i></i>';
     b.addEventListener('click', function () { showQ(i); }); dots.appendChild(b);
   });
   function showQ(i, first) {
     qi = (i + STORIES.length) % STORIES.length; var s = STORIES[qi];
-    var fill = function () { $('#q').textContent = s[0]; $('#q-n').textContent = s[1]; $('#q-m').textContent = s[2]; $('#q-av').textContent = s[1].charAt(0); qcard.classList.remove('out'); };
+    var fill = function () { $('#q').textContent = s[0]; $('#q-n').textContent = s[1]; $('#q-m').textContent = s[2]; $('#q-av').textContent = s[1].charAt(0); $('#q-tag').textContent = QTAGS[qi] || 'Student experience'; qcard.classList.remove('out'); qcard.classList.remove('rate'); void qcard.offsetWidth; qcard.classList.add('rate'); };
     if (first || reduce) fill(); else { qcard.classList.add('out'); setTimeout(fill, 320); }
-    $$('button', dots).forEach(function (b, k) { b.removeAttribute('aria-current'); if (k === qi) { void b.offsetWidth; b.setAttribute('aria-current', 'true'); } });
+    $$('button', dots).forEach(function (b, k) { b.removeAttribute('aria-current'); if (k === qi) { if (!first) void b.offsetWidth; b.setAttribute('aria-current', 'true'); } });
     clearTimeout(qt); if (!reduce) qt = setTimeout(function () { showQ(qi + 1); }, 7000);
   }
   $('#q-prev').addEventListener('click', function () { showQ(qi - 1); });
@@ -479,18 +506,18 @@
       if (!uni) return;
       $('#p-uni').value = uni; $('#p-uni-n').textContent = uni; $('#p-uni-box').hidden = false;
       $('#p-uni-x').addEventListener('click', function () { $('#p-uni').value = ''; $('#p-uni-box').hidden = true; });
-      addEventListener('load', function () { setTimeout(function () { var b = $('#begin'); if (b) b.scrollIntoView({ behavior: 'auto' }); open(); }, 150); });
+      addEventListener('load', function () { setTimeout(function () { var b = $('#begin [data-scroll-anchor]') || $('#begin'), h = $('#hdr'); if (b) scrollTo({ top: b.getBoundingClientRect().top + scrollY - (h ? h.offsetHeight : 0) - 20, behavior: 'auto' }); open(); }, 150); });
     })();
     $('#p-name').addEventListener('input', function () { $('#pp-holder').textContent = (this.value.trim() || 'YOUR NAME').toUpperCase().slice(0, 24); });
-    $('#p-from').addEventListener('change', function () { var cc = { India: '+91', UAE: '+971', 'Sri Lanka': '+94', Nepal: '+977', Bangladesh: '+880' }[this.value]; if (cc) $('#p-cc').value = cc; });
+    $('#p-from').addEventListener('change', function () { var cc = { India: '+91', UAE: '+971', 'Sri Lanka': '+94', Nepal: '+977', Bangladesh: '+880' }[this.value]; if (cc && $('#p-cc').value !== cc) { $('#p-cc').value = cc; $('#p-cc').dispatchEvent(new Event('change', { bubbles: true })); } });
     function bad(id, c) { $(id).closest('.pf').classList.toggle('bad', c); return c; }
     ['#p-name', '#p-phone', '#p-email'].forEach(function (id) { $(id).addEventListener('input', function () { $(id).closest('.pf').classList.remove('bad'); }); });
     form.addEventListener('submit', function (e) {
       e.preventDefault(); st.className = 'pass__status'; st.textContent = '';
       var d = {}; new FormData(form).forEach(function (v, k) { d[k] = String(v).trim(); });
       var x = bad('#p-name', d.name.length < 2);
-      x = bad('#p-phone', !/^\d{7,15}$/.test(d.phone_number.replace(/\D/g, ''))) || x;
-      x = bad('#p-email', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) || x;
+      x = bad('#p-phone', window.TCV ? !TCV.phoneOk(d.country_code, d.phone_number) : !/^\d{7,15}$/.test(d.phone_number.replace(/\D/g, ''))) || x;
+      x = bad('#p-email', window.TCV ? !TCV.emailOk(d.email) : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) || x;
       if (x) { var f = $('.pf.bad input', form); if (f) f.focus(); return; }
       var dest = d.destination_choice || 'Germany';
       var payload = { name: d.name, email: d.email, phone: d.country_code + ' ' + d.phone_number,
@@ -499,7 +526,7 @@
       go.disabled = true; $('#p-go-t').textContent = 'Stamping your passport…';
       // Two independent channels; the lead counts as received when EITHER confirms.
       // Paste the Apps Script Web app URL (ends in /exec) here:
-      var LEADS_URL = 'https://script.google.com/macros/s/AKfycbwZFZ4OFJuVBG3xCAHiiGIf55-KnNX7HdPEI7JtMg53mZqoJ50tgUOzChs0quwGG9kR/exec';
+      var LEADS_URL = 'https://script.google.com/macros/s/AKfycbxN2GtDWuX9uGFyfG7wIFbYVqHOFgVIn5LPr0ioIpenQu2xTdUgXRUr6tdMffATwwQI/exec';
       $('#p-full-phone').value = payload.phone; $('#p-page').value = payload.page;
       var body = new URLSearchParams(new FormData(form)).toString();
       function within(ms, pr) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
@@ -514,7 +541,7 @@
         .then(function (r) { if (!r.ok) throw new Error('forms'); }));
       new Promise(function (ok, no) { var fails = 0; [viaSheet, viaForms].forEach(function (p) { p.then(ok, function () { if (++fails === 2) no(new Error('')); }); }); })
         .then(function () {
-          $('#done-n').textContent = d.name.split(' ')[0]; book.classList.add('ok');
+          var fn = (d.name || '').trim().split(/\s+/)[0] || ''; fn = fn ? fn.charAt(0).toUpperCase() + fn.slice(1) : ''; $('#done-n').textContent = fn ? ', ' + fn : ''; book.classList.add('ok'); setTimeout(function () { var dn = $('.pp__done'); if (dn) dn.focus({ preventScroll: true }); }, 60);
           if (window.dataLayer) dataLayer.push({ event: 'generate_lead', lead_country: dest, lead_university: d.university || '', lead_level: d.study_level, lead_origin: d.origin });
           if (window.fbq) fbq('track', 'Lead');
         })
@@ -563,14 +590,19 @@
       var d = 'M' + pts[0][0] + ' ' + pts[0][1];
       // bulge (3rd value) bows the segment sideways a little, so the route feels walked rather than ruled
       for (var k = 1; k < pts.length; k++) { var a = pts[k - 1], b = pts[k], my = (a[1] + b[1]) / 2, bw = b[2] || 0; d += ' C ' + (a[0] + bw) + ' ' + my + ' ' + (b[0] + bw) + ' ' + my + ' ' + b[0] + ' ' + b[1]; }
-      base.setAttribute('d', d); live.setAttribute('d', d); L = live.getTotalLength(); live.style.strokeDasharray = L; upd();
+      base.setAttribute('d', d); live.setAttribute('d', d); L = live.getTotalLength(); live.style.strokeDasharray = L;
+      // perf: sample the path once (every ~6px) so scrolling never calls getPointAtLength
+      TY = []; TX = []; TL = []; for (var sl = 0; sl <= L; sl += 6) { var sp = live.getPointAtLength(sl); TL.push(sl); TX.push(sp.x); TY.push(sp.y); }
+      upd();
     }
     // the thread runs behind sections: draw it only in the gutters by clipping to section edges is overkill — it sits under content (z-index) and fades over text areas
+    var TY = [], TX = [], TL = [];
     function upd() {
-      if (!L) return; var target = scrollY + innerHeight * .6, lo = 0, hi = L;
-      for (var it = 0; it < 18; it++) { var mid = (lo + hi) / 2; if (live.getPointAtLength(mid).y < target) lo = mid; else hi = mid; }
-      live.style.strokeDashoffset = L - lo; var p = live.getPointAtLength(lo), q = live.getPointAtLength(Math.min(L, lo + 2));
-      plane.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ') rotate(' + (Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI + 90) + ')');
+      if (!L || !TY.length) return; var target = scrollY + innerHeight * .6, a = 0, b = TY.length - 1;
+      while (b - a > 1) { var m = (a + b) >> 1; if (TY[m] < target) a = m; else b = m; }
+      var i = a, j = Math.min(TY.length - 1, i + 1);
+      live.style.strokeDashoffset = L - TL[i];
+      plane.setAttribute('transform', 'translate(' + TX[i] + ' ' + TY[i] + ') rotate(' + (Math.atan2(TY[j] - TY[i], TX[j] - TX[i]) * 180 / Math.PI + 90) + ')');
     }
     addEventListener('load', build); addEventListener('resize', raf(build)); addEventListener('scroll', raf(upd), { passive: true });
     setTimeout(build, 1500);
@@ -580,6 +612,14 @@
   (function () {
     var ticks = $$('[data-tick]'), zero = $('#zero'), band = $('#band'), rail = $('#jrail'), rl = $$('a', rail), stages = $$('[data-stage]'), hm = null;
     var order = ['hero', 'explore', 'choose', 'services', 'pathway', 'begin'];
+    // perf: section positions are measured once (and again when the page height changes), not on every scroll frame
+    var secMap = null, secAt = 0, lastCur = -1;
+    function mapSecs() {
+      var y = scrollY; secAt = document.documentElement.scrollHeight;
+      secMap = { order: order.map(function (id) { var el = document.getElementById(id); return el ? el.getBoundingClientRect().top + y : 1e9; }), dark: [] };
+      $$('.on-dark,.explore,.depart,.hero,.hero4,.ticker--dark,.band,#hero,#explore,#choose,#services,#pathway,#begin').forEach(function (el) { var r = el.getBoundingClientRect(); secMap.dark.push([r.top + y, r.bottom + y]); });
+    }
+    addEventListener('resize', function () { secMap = null; }); addEventListener('load', function () { secMap = null; });
     var run = raf(function () {
       var vh = innerHeight;
       if (!reduce) {
@@ -590,12 +630,12 @@
         band.style.setProperty('--w', ((1 - bp) * (innerWidth < 760 ? 12 : 30)).toFixed(2) + '%'); band.style.setProperty('--br', ((1 - bp) * 28).toFixed(1) + 'px');
       }
       // journey rail
-      var cur = 0; order.forEach(function (id, k) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top < vh * .5) cur = k; });
-      rl.forEach(function (a, k) { a.classList.toggle('on', k === cur); });
+      if (!secMap || secAt !== document.documentElement.scrollHeight) mapSecs();
+      var line = scrollY + vh * .5, cur = 0; secMap.order.forEach(function (t, k) { if (t < line) cur = k; });
+      if (cur !== lastCur) { rl.forEach(function (a, k) { a.classList.toggle('on', k === cur); }); lastCur = cur; }
       rail.classList.toggle('on', scrollY > vh * .6);
-      var dk = false; ['hero', 'explore', 'choose', 'services', 'pathway', 'begin'].forEach(function (id) { var r = document.getElementById(id).getBoundingClientRect(); if (r.top < vh / 2 && r.bottom > vh / 2) dk = true; });
-      var mid = document.elementFromPoint(innerWidth - 30, vh / 2); var darkSec = mid && mid.closest('.on-dark,.explore,.depart,.hero,.ticker--dark,.band');
-      rail.classList.toggle('dark', !!darkSec || dk);
+      var dk = secMap.dark.some(function (r) { return r[0] < line && r[1] > line; });
+      rail.classList.toggle('dark', dk);
     });
     addEventListener('scroll', run, { passive: true }); addEventListener('resize', run); run();
 

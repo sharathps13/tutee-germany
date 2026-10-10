@@ -5,6 +5,9 @@
    - rotation, cursor steer and hover use time-based easing, so motion is frame-rate independent
    - device pixel ratio capped at 1.75; loop pauses off-screen or in a hidden tab */
 (function () {
+  // perf: weaker devices get a lighter globe; every device redraws at half rate while the page is scrolling
+  var LOWEND = (navigator.hardwareConcurrency || 4) <= 4 || matchMedia('(pointer:coarse)').matches || (navigator.deviceMemory || 8) <= 4;
+  var scrolling = 0; addEventListener('scroll', function () { scrolling = performance.now(); }, { passive: true });
   'use strict';
   var RAD = Math.PI / 180, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function vec(lat, lon) { var p = lat * RAD, l = lon * RAD, c = Math.cos(p); return [c * Math.sin(l), Math.sin(p), c * Math.cos(l)]; }
@@ -62,7 +65,7 @@
   }
   var P = Globe.prototype;
   P.resize = function () {
-    var r = this.c.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 1.75);
+    var r = this.c.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, LOWEND ? 1.25 : 1.75);
     if (!r.width) return;
     this.w = r.width; this.h = r.height; this.c.width = Math.round(r.width * d); this.c.height = Math.round(r.height * d);
     this.ctx.setTransform(d, 0, 0, d, 0, 0); this.R = Math.min(this.w, this.h) * 0.44; this.dot = Math.max(1.1, this.R / 230);
@@ -142,6 +145,8 @@
     if (this._raf) return; var self = this, prev = performance.now();
     function step(now) {
       self._raf = null; if (!self.visible || document.hidden) return;
+      var busy = now - scrolling < 160, minGap = busy ? 1e9 : (LOWEND ? 31 : 0); // frozen mid-scroll, resumes when the page settles
+      if (now - prev < minGap) { prev = now - 16; self._raf = requestAnimationFrame(step); return; }
       var dt = Math.min(48, now - prev); prev = now; self.t = now;
       var k = 1 - Math.exp(-dt / 220), kf = 1 - Math.exp(-dt / 90);       // time-based easing factors
       self.speed += ((self.hover || self.focusT ? 0 : 1) - self.speed) * k;   // hover / focus → globe settles
