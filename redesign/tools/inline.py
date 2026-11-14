@@ -2,7 +2,7 @@
 import base64, glob, os, pathlib, sys
 R = pathlib.Path(__file__).resolve().parent.parent
 d = lambda p, m: 'data:%s;base64,%s' % (m, base64.b64encode((R/p).read_bytes()).decode())
-h = (R/'index.html').read_text(); css = (R/'assets/css/style.css').read_text(); js = (R/'assets/js/app.js').read_text()
+h = __import__('re').sub(r'\?v=\d+"', '"', (R/'index.html').read_text()); css = (R/'assets/css/style.css').read_text(); js = (R/'assets/js/app.js').read_text()
 logo = 'var LOGO={' + ','.join("'%s':'%s'" % (os.path.basename(f)[:-5], d(os.path.relpath(f, R), 'image/webp')) for f in glob.glob(str(R/'assets/img/loan/*.webp'))) + '};'
 js = js.replace("""'<img src="assets/img/loan/' + k + '.webp" alt=""", """'<img src="' + LOGO[k] + '" alt=""")
 js = js.replace("t.src = 'assets/img/loan/' + k + '.webp';", "if (LOGO[k]) t.src = LOGO[k];")
