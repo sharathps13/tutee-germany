@@ -16,14 +16,9 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# The pages post to /api/enquiry (same origin). The function also declares this
-# path itself via `export const config`, so this redirect is belt-and-braces:
-# it keeps the endpoint working on older Netlify function runtimes too.
-[[redirects]]
-  from = "/api/enquiry"
-  to = "/.netlify/functions/enquiry"
-  status = 200
-  force = true
+# The pages post to /api/enquiry (same origin). The function claims that path itself via
+# `export const config = { path: "/api/enquiry" }`. Do NOT add a redirect to /.netlify/functions/enquiry:
+# a function with its own path no longer answers at that default URL, so such a redirect turns every lead into a 404.
 
 
 # Explorer routes. A trailing slash ("/universities/") would make the page's
