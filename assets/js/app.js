@@ -540,23 +540,21 @@
       x = bad('#p-email', window.TCV ? !TCV.emailOk(d.email) : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) || x;
       if (x) { var f = $('.pf.bad input', form); if (f) f.focus(); return; }
       var dest = d.destination_choice || 'Germany';
+      var unis = [d.university, d.universities].filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ');
+      // same lead format as the other Tutee Connect landing pages (Website Leads → "Germany Leads" tab)
       var payload = { name: d.name, email: d.email, phone: d.country_code + ' ' + d.phone_number,
-        destination: dest + (d.university ? ' | University: ' + d.university : '') + (d.universities ? ' | Universities: ' + d.universities : '') + ' | ' + d.study_level + ' | State: ' + d.origin + ' | Call: ' + (d.call_time || 'Anytime'), university: [d.university, d.universities].filter(Boolean).join(', '), study_level: d.study_level, origin: d.origin, call_time: d.call_time || '', universities: d.universities || '',
-        from_name: 'Tutee Connect — Germany landing page', page: location.pathname + location.search, botcheck: d.botcheck };
+        state: d.origin || '', shortlist: unis, course: d.study_level || '', call_time: d.call_time || '',
+        destination: dest + (unis ? ' – ' + unis : ''), message: window.__tcElig || '',
+        page: location.pathname + location.search, botcheck: d.botcheck };
       go.disabled = true; $('#p-go-t').textContent = 'Stamping your passport…';
-      // Two independent channels; the lead counts as received when EITHER confirms.
-      // Paste the Apps Script Web app URL (ends in /exec) here:
-      var LEADS_URL = 'https://script.google.com/macros/s/AKfycbxN2GtDWuX9uGFyfG7wIFbYVqHOFgVIn5LPr0ioIpenQu2xTdUgXRUr6tdMffATwwQI/exec';
       $('#p-full-phone').value = payload.phone; $('#p-page').value = payload.page;
       var body = new URLSearchParams(new FormData(form)).toString();
       function within(ms, pr) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
-      // Primary: straight from the browser to the Google Apps Script web app
-      // (Sheet row + email to business@). Works without Netlify Functions.
-      // no-cors: the browser can't read Google's reply, so a delivered request counts.
-      var viaSheet = LEADS_URL.indexOf('/exec') > 0
-        ? within(15000, fetch(LEADS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(Object.assign({ channel: 'web', country: 'Germany', source: payload.from_name }, payload)) }))
-        : Promise.reject(new Error('no sheet url'));
+      // Primary: the site's own /api/enquiry function forwards the lead to the shared Apps Script
+      // (Website Leads sheet + email to business@). The Apps Script URL and token stay on Netlify.
+      var viaSheet = within(15000, fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.success) throw new Error('sheet'); }); }));
+      // Backup copy in Netlify Forms, so a lead is never lost if the sheet is briefly unreachable
       var viaForms = within(15000, fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
         .then(function (r) { if (!r.ok) throw new Error('forms'); }));
       new Promise(function (ok, no) { var fails = 0; [viaSheet, viaForms].forEach(function (p) { p.then(ok, function () { if (++fails === 2) no(new Error('')); }); }); })
@@ -721,6 +719,7 @@
     else if (A.aim === 'ma') { if (A.lvl === '12') { ok = 'low'; t = 'A bachelor’s comes first'; d = 'A master’s needs a completed bachelor’s degree. We can map a bachelor’s route for you.'; } else if (A.lvl === 'ug3') { ok = 'mid'; t = 'Eligible for many programmes'; d = 'Many master’s programmes accept 3-year degrees; some ask for 4 years or extra credits. We shortlist the ones that fit.'; } else { t = 'Looks promising'; d = 'Your degree is a strong base for a German master’s. Next: APS, language proof and shortlisting.'; } }
     else { if (A.lvl !== 'pg') { ok = 'low'; t = 'A master’s usually comes first'; d = 'A German PhD normally needs a master’s degree. Let’s plan the route.'; } else { t = 'Looks promising'; d = 'With a master’s you can look for a supervisor or a structured PhD programme.'; } }
     if (A.lang === 'no') d += ' You’ll also need a language test; we’ll suggest the right one.';
+    var L = { lvl: { '12': 'Class 12', ug3: '3-year degree', ug4: '4-year degree', pg: "Master's" }, lang: { en: 'IELTS / TOEFL', de: 'German', no: 'Not yet' }, aim: { ba: "Bachelor's", ma: "Master's", phd: 'PhD' } }; window.__tcElig = 'Eligibility check: Completed ' + L.lvl[A.lvl] + ' · Language test: ' + L.lang[A.lang] + ' · Wants to study: ' + L.aim[A.aim] + ' · Result: ' + t;
     out.className = 'elig__res is-' + ok; out.innerHTML = html || '<b>' + t + '</b><span>' + d + '</span>'; out.hidden = false;
     var lv = document.getElementById('f-level'); if (lv) { var m = { ba: "Bachelor's degree", ma: "Master's degree", phd: 'PhD' }[A.aim]; if (m) { lv.value = m; lv.dispatchEvent(new Event('change', { bubbles: true })); } }
   }
