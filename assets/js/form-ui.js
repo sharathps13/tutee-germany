@@ -103,7 +103,7 @@
     root.innerHTML = '<button type="button" class="dd__btn" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="' + id + '-l"' +
       (label ? ' aria-labelledby="' + (label.id = label.id || id + '-lab') + ' ' + id + '-v"' : ' aria-label="' + (sel.getAttribute('aria-label') || '') + '"') + '>' +
       '<span class="dd__v" id="' + id + '-v"></span><svg class="dd__chev" viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
-      '<div class="dd__pop" hidden>' + (opt.search ? '<div class="dd__s"><svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="text" placeholder="Search country or code" aria-label="Search countries" autocomplete="off"></div>' : '') +
+      '<div class="dd__pop" hidden>' + (opt.search ? '<div class="dd__s"><svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="text" placeholder="' + (opt.ph || 'Search country or code') + '" aria-label="' + (opt.ph || 'Search countries') + '" autocomplete="off"></div>' : '') +
       '<ul class="dd__l" role="listbox" id="' + id + '-l" tabindex="-1"></ul><p class="dd__none" hidden>No match</p></div>';
     sel.classList.add('dd-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
     sel.parentNode.insertBefore(root, sel.nextSibling);
@@ -128,7 +128,16 @@
       shown = items; if (q) q.value = ''; render();
       pop.hidden = false; root.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
       // keep it on screen: flip up if there is no room below
-      var r = pop.getBoundingClientRect(); root.classList.toggle('up', r.bottom > innerHeight - 8 && r.top - r.height - btn.offsetHeight > 70);
+      // keep it inside the visible area: the screen AND any clipping parent (the passport page)
+      root.classList.remove('up'); pop.style.left = pop.style.right = pop.style.maxWidth = ''; list.style.maxHeight = '';
+      var bt = 8, bb = innerHeight - 8, bl = 8, br = innerWidth - 8, e = root.parentElement;
+      while (e && e !== document.body) { var cs = getComputedStyle(e); if (cs.overflow !== 'visible' || cs.overflowY !== 'visible' || cs.overflowX !== 'visible') { var er = e.getBoundingClientRect(); bt = Math.max(bt, er.top + 8); bb = Math.min(bb, er.bottom - 8); bl = Math.max(bl, er.left + 8); br = Math.min(br, er.right - 8); } e = e.parentElement; }
+      var rb = btn.getBoundingClientRect(), below = bb - rb.bottom - 10, above = rb.top - bt - 10, chrome = pop.offsetHeight - list.offsetHeight;
+      var up = below < pop.offsetHeight && above > below; root.classList.toggle('up', up);
+      list.style.maxHeight = Math.max(120, Math.min(list.scrollHeight, (up ? above : below) - chrome)) + 'px';
+      var pr = pop.getBoundingClientRect();
+      if (pr.right > br) { pop.style.left = 'auto'; pop.style.right = '0'; pr = pop.getBoundingClientRect(); }
+      if (pr.left < bl || pr.right > br) { pop.style.maxWidth = (br - Math.max(bl, pr.left)) + 'px'; }
       requestAnimationFrame(function () { root.classList.add('in'); });
       setAct(Math.max(0, shown.findIndex(function (x) { return x.v === sel.value; })));
       if (q) q.focus({ preventScroll: true });
@@ -163,7 +172,7 @@
       q.addEventListener('keydown', keys);
       q.addEventListener('input', function () {
         var s = q.value.trim().toLowerCase().replace(/^\+/, '');
-        shown = !s ? items : items.filter(function (it) { var c = CC[it.v]; return it.v.replace('+', '').indexOf(s) === 0 || (c && c.n.toLowerCase().indexOf(s) > -1); });
+        shown = !s ? items : items.filter(function (it) { var c = CC[it.v]; return it.v.replace('+', '').indexOf(s) === 0 || (c && c.n.toLowerCase().indexOf(s) > -1) || it.t.toLowerCase().indexOf(s) > -1; });
         render(); setAct(0);
       });
     }
@@ -174,7 +183,14 @@
 
   var NAT = { India: 'IN', UAE: 'AE', 'Sri Lanka': 'LK', Nepal: 'NP', Bangladesh: 'BD', Other: 'WORLD' };
   dropdown($('#f-level'), { cls: 'dd--prog' });
-  dropdown($('#p-from'), { cls: 'dd--nat', face: function (it) { return flag(NAT[it.v]) + '<span>' + it.t + '</span>'; }, item: function (it) { return flag(NAT[it.v]) + '<span class="dd__t">' + it.t + '</span>'; } });
+  dropdown($('#p-from'), { cls: 'dd--state', search: true, ph: 'Search your state' });
+  if ($('#p-time')) dropdown($('#p-time'), { cls: 'dd--time' });
+  var us = $('#p-unis');
+  if (us && us.tagName === 'SELECT') {
+    (window.TC_UNIS || []).map(function (u) { return u.name + (u.city ? ' — ' + u.city : ''); }).sort().forEach(function (t) { var o = document.createElement('option'); o.textContent = t; o.value = t.split(' — ')[0]; us.appendChild(o); });
+    var pre = ($('#p-uni') || {}).value; if (pre) { for (var ui = 0; ui < us.options.length; ui++) if (us.options[ui].value === pre) { us.value = pre; break; } }
+    dropdown(us, { cls: 'dd--uni', search: true, ph: 'Search a university' });
+  }
   dropdown(cc, { cls: 'dd--cc', search: true,
     face: function (it) { return flag(CC[it.v] ? CC[it.v].k : '') + '<span>' + it.v + '</span>'; },
     item: function (it) { var c = CC[it.v] || {}; return flag(c.k) + '<span class="dd__t">' + (c.n || it.v) + '</span><span class="dd__c">' + it.v + '</span>'; } });

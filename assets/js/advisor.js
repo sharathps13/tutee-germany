@@ -142,3 +142,16 @@
   openStop(TOPICS[0]); welcome();
   new IntersectionObserver(function (e, o) { if (e[0].isIntersecting) { drawLink(); o.disconnect(); } }).observe(root);
 })();
+/* v98 voice input for the ask bar (Web Speech API) — shown only where the browser supports it */
+(function () {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, b = document.getElementById('tav-mic'), inp = document.getElementById('tav-in');
+  if (!SR || !b || !inp) return; b.hidden = false; var rec = null;
+  b.addEventListener('click', function () {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = 'en-IN'; rec.interimResults = true; rec.maxAlternatives = 1;
+    b.classList.add('on'); b.setAttribute('aria-label', 'Stop listening');
+    rec.onresult = function (e) { var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; inp.value = t.slice(0, 200); };
+    rec.onend = rec.onerror = function () { rec = null; b.classList.remove('on'); b.setAttribute('aria-label', 'Ask by voice'); inp.focus(); };
+    rec.start();
+  });
+})();

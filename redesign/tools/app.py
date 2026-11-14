@@ -10,8 +10,9 @@ h = (R/'universities.html').read_text().replace('<link rel="stylesheet" href="as
 for f in ['unis-de.js', 'explorer.js']:
     h = h.replace(f'<script src="assets/js/{f}" defer></script>', '<script>' + (R/'assets/js'/f).read_text().replace('</script', '<\\/script') + '</script>')
 h = h.replace('assets/img/logo-master.png', 'data:image/png;base64,' + base64.b64encode((R/'assets/img/logo-master.png').read_bytes()).decode())
+SHELL_FAV = 'data:image/png;base64,' + base64.b64encode((R/'assets/img/favicon-32.png').read_bytes()).decode()
 h = h.replace('assets/img/icon.png', 'data:image/png;base64,' + base64.b64encode((R/'assets/img/icon.png').read_bytes()).decode())
-SHELL = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+SHELL = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Study in Germany | Tutee Connect</title><link rel="icon" type="image/png" href="__FAVICON__">
 <title>Tutee Connect — Study in Germany</title>
 <style>html,body{margin:0;height:100%;background:#071a1a;overflow:hidden}iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}</style></head><body>
 <iframe id="v" title="Tutee Connect"></iframe>
@@ -37,5 +38,5 @@ function route(){var x=location.hash.replace(/^#\/?/,''),hash='';var i=x.indexOf
 addEventListener('hashchange',route);route();
 </script></body></html>'''
 enc = lambda s: json.dumps(s).replace('</', '<\\/')
-pathlib.Path(sys.argv[1]).write_text(SHELL.replace('__HOME__', enc(land)).replace('__UNI__', enc(h)))
+pathlib.Path(sys.argv[1]).write_text(SHELL.replace('__FAVICON__', SHELL_FAV).replace('__HOME__', enc(land)).replace('__UNI__', enc(h)))
 print(sys.argv[1])

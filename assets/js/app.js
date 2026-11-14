@@ -6,6 +6,13 @@
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
   var raf = function (fn) { var q = false; return function () { if (!q) { q = true; requestAnimationFrame(function () { q = false; fn(); }); } }; };
+  // perf (v140): page positions are measured once and cached; scroll handlers read the cache instead of
+  // forcing a fresh layout every frame. The cache is dropped whenever the page size changes.
+  var absEpoch = 1, ABS = typeof WeakMap === 'function' ? new WeakMap() : null;
+  var absTop = function (el) { var c = ABS && ABS.get(el); if (c && c.e === absEpoch) return c; var r = el.getBoundingClientRect(); c = { t: r.top + scrollY, h: r.height, e: absEpoch }; if (ABS) ABS.set(el, c); return c; };
+  var absReset = function () { absEpoch++; };
+  addEventListener('resize', absReset); addEventListener('load', absReset);
+  if (window.ResizeObserver) new ResizeObserver(absReset).observe(document.documentElement);
 
   /* ---------------- content (facts carried over from the existing Germany pages;
      immigration figures change often and must be verified each intake) ---------------- */
@@ -65,7 +72,7 @@
   /* ---------------- header / floating pill / mobile bar ---------------- */
   var hdr = $('#hdr'), pill = $('#pill'), wa = $('#wa'), mbar = $('#mbar'), lastY = 0, formOn = false;
   var onScroll = raf(function () {
-    var y = scrollY, past = y > $('#hero').offsetHeight * .75;
+    var y = scrollY, past = y > absTop($('#hero')).h * .75;
     hdr.classList.toggle('solid', y > 40);
     if (y > 500 && y > lastY + 4 && !(window.__navLock > Date.now())) hdr.classList.add('hide'); else if (y < lastY - 4 && !(window.__navLock > Date.now())) hdr.classList.remove('hide');
     [pill, mbar].forEach(function (el) { el.classList.toggle('on', past && !formOn); });
@@ -107,7 +114,7 @@
   /* ---------------- parallax ---------------- */
   var pxEls = $$('[data-px]');
   if (pxEls.length && !reduce) {
-    var px = raf(function () { pxEls.forEach(function (el) { var r = el.parentElement.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return; el.style.transform = 'translate3d(0,' + ((r.top + r.height / 2 - innerHeight / 2) * -(+el.dataset.px)) + 'px,0)'; }); });
+    var px = raf(function () { var vh = innerHeight, sy = scrollY; pxEls.forEach(function (el) { var m = absTop(el.parentElement), r = { top: m.t - sy, height: m.h, bottom: m.t - sy + m.h }; if (r.bottom < 0 || r.top > vh) return; el.style.transform = 'translate3d(0,' + ((r.top + r.height / 2 - innerHeight / 2) * -(+el.dataset.px)) + 'px,0)'; }); });
     addEventListener('scroll', px, { passive: true }); px();
   }
 
@@ -157,12 +164,14 @@
     fi: 'Study • Innovation • Quality of life', pl: 'Study • Medicine • Affordable EU', sg: 'Study • Business • Asia hub',
     my: 'Study • Value • Branch campuses', ae: 'Study • Career • Close to home', mu: 'Study • Island campus • Value' };
   var ISO = { uk: 'gb' };
+  /* country flags (flag-icons, MIT) inlined as data URIs for the map hover tag */
+  var FLAG = {"de": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWRlIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiNmYzAiIGQ9Ik0wIDMyMGg2NDB2MTYwSDB6Ii8+IDxwYXRoIGZpbGw9IiMwMDAwMDEiIGQ9Ik0wIDBoNjQwdjE2MEgweiIvPiA8cGF0aCBmaWxsPSJyZWQiIGQ9Ik0wIDE2MGg2NDB2MTYwSDB6Ii8+IDwvc3ZnPg==", "gb": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWdiIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiMwMTIxNjkiIGQ9Ik0wIDBoNjQwdjQ4MEgweiIvPiA8cGF0aCBmaWxsPSIjRkZGIiBkPSJtNzUgMCAyNDQgMTgxTDU2MiAwaDc4djYyTDQwMCAyNDFsMjQwIDE3OHY2MWgtODBMMzIwIDMwMSA4MSA0ODBIMHYtNjBsMjM5LTE3OEwwIDY0VjB6Ii8+IDxwYXRoIGZpbGw9IiNDODEwMkUiIGQ9Im00MjQgMjgxIDIxNiAxNTl2NDBMMzY5IDI4MXptLTE4NCAyMCA2IDM1TDU0IDQ4MEgwek02NDAgMHYzTDM5MSAxOTFsMi00NEw1OTAgMHpNMCAwbDIzOSAxNzZoLTYwTDAgNDJ6Ii8+IDxwYXRoIGZpbGw9IiNGRkYiIGQ9Ik0yNDEgMHY0ODBoMTYwVjB6TTAgMTYwdjE2MGg2NDBWMTYweiIvPiA8cGF0aCBmaWxsPSIjQzgxMDJFIiBkPSJNMCAxOTN2OTZoNjQwdi05NnpNMjczIDB2NDgwaDk2VjB6Ii8+IDwvc3ZnPg==", "us": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLXVzIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiNiZDNkNDQiIGQ9Ik0wIDBoNjQwdjQ4MEgwIi8+IDxwYXRoIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzNyIgZD0iTTAgNTUuM2g2NDBNMCAxMjloNjQwTTAgMjAzaDY0ME0wIDI3N2g2NDBNMCAzNTFoNjQwTTAgNDI1aDY0MCIvPiA8cGF0aCBmaWxsPSIjMTkyZjVkIiBkPSJNMCAwaDM2NC44djI1OC41SDAiLz4gPG1hcmtlciBpZD0idXMtYSIgbWFya2VySGVpZ2h0PSIzMCIgbWFya2VyV2lkdGg9IjMwIj4gPHBhdGggZmlsbD0iI2ZmZiIgZD0ibTE0IDAgOSAyN0wwIDEwaDI4TDUgMjd6Ii8+IDwvbWFya2VyPiA8cGF0aCBmaWxsPSJub25lIiBtYXJrZXItbWlkPSJ1cmwoI3VzLWEpIiBkPSJtMCAwIDE2IDExaDYxIDYxIDYxIDYxIDYwTDQ3IDM3aDYxIDYxIDYwIDYxTDE2IDYzaDYxIDYxIDYxIDYxIDYwTDQ3IDg5aDYxIDYxIDYwIDYxTDE2IDExNWg2MSA2MSA2MSA2MSA2MEw0NyAxNDFoNjEgNjEgNjAgNjFMMTYgMTY2aDYxIDYxIDYxIDYxIDYwTDQ3IDE5Mmg2MSA2MSA2MCA2MUwxNiAyMThoNjEgNjEgNjEgNjEgNjB6Ii8+IDwvc3ZnPg==", "ca": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWNhIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0xNTAuMSAwaDMzOS43djQ4MEgxNTB6Ii8+IDxwYXRoIGZpbGw9IiNkNTJiMWUiIGQ9Ik0tMTkuNyAwaDE2OS44djQ4MEgtMTkuN3ptNTA5LjUgMGgxNjkuOHY0ODBINDg5Ljl6TTIwMSAyMzJsLTEzLjMgNC40IDYxLjQgNTRjNC43IDEzLjctMS42IDE3LjgtNS42IDI1bDY2LjYtOC40LTEuNiA2NyAxMy45LS4zLTMuMS02Ni42IDY2LjcgOGMtNC4xLTguNy03LjgtMTMuMy00LTI3LjJsNjEuMy01MS0xMC43LTRjLTguOC02LjggMy44LTMyLjYgNS42LTQ4LjkgMCAwLTM1LjcgMTIuMy0zOCA1LjhsLTkuMi0xNy41LTMyLjYgMzUuOGMtMy41LjktNS0uNS01LjktMy41bDE1LTc0LjgtMjMuOCAxMy40cS0zLjIgMS4zLTUuMi0yLjJsLTIzLTQ2LTIzLjYgNDcuOHEtMi44IDIuNS01IC43TDI2NCAxMzAuOGwxMy43IDc0LjFjLTEuMSAzLTMuNyAzLjgtNi43IDIuMmwtMzEuMi0zNS4zYy00IDYuNS02LjggMTcuMS0xMi4yIDE5LjVzLTIzLjUtNC41LTM1LjYtN2M0LjIgMTQuOCAxNyAzOS42IDkgNDcuNyIvPiA8L3N2Zz4=", "au": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWF1IiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiMwMDAwOEIiIGQ9Ik0wIDBoNjQwdjQ4MEgweiIvPiA8cGF0aCBmaWxsPSIjZmZmIiBkPSJtMzcuNSAwIDEyMiA5MC41TDI4MSAwaDM5djMxbC0xMjAgODkuNSAxMjAgODlWMjQwaC00MGwtMTIwLTg5LjVMNDAuNSAyNDBIMHYtMzBsMTE5LjUtODlMMCAzMlYweiIvPiA8cGF0aCBmaWxsPSJyZWQiIGQ9Ik0yMTIgMTQwLjUgMzIwIDIyMHYyMGwtMTM1LjUtOTkuNXptLTkyIDEwIDMgMTcuNS05NiA3Mkgwek0zMjAgMHYxLjVsLTEyNC41IDk0IDEtMjJMMjk1IDB6TTAgMGwxMTkuNSA4OGgtMzBMMCAyMXoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEyMC41IDB2MjQwaDgwVjB6TTAgODB2ODBoMzIwVjgweiIvPiA8cGF0aCBmaWxsPSJyZWQiIGQ9Ik0wIDk2LjV2NDhoMzIwdi00OHpNMTM2LjUgMHYyNDBoNDhWMHoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0ibTUyNyAzOTYuNy0yMC41IDIuNiAyLjIgMjAuNS0xNC44LTE0LjQtMTQuNyAxNC41IDItMjAuNS0yMC41LTIuNCAxNy4zLTExLjItMTAuOS0xNy41IDE5LjYgNi41IDYuOS0xOS41IDcuMSAxOS40IDE5LjUtNi43LTEwLjcgMTcuNnptLTMuNy0xMTcuMiAyLjctMTMtOS44LTkgMTMuMi0xLjUgNS41LTEyLjEgNS41IDEyLjEgMTMuMiAxLjUtOS44IDkgMi43IDEzLTExLjYtNi42em0tMTA0LjEtNjAtMjAuMyAyLjIgMS44IDIwLjMtMTQuNC0xNC41LTE0LjggMTQuMSAyLjQtMjAuMy0yMC4yLTIuNyAxNy4zLTEwLjgtMTAuNS0xNy41IDE5LjMgNi44TDM4NyAxNzhsNi43IDE5LjMgMTkuNC02LjMtMTAuOSAxNy4zIDE3LjEgMTEuMlpNNjIzIDE4Ni43bC0yMC45IDIuNyAyLjMgMjAuOS0xNS4xLTE0LjctMTUgMTQuOCAyLjEtMjEtMjAuOS0yLjQgMTcuNy0xMS41LTExLjEtMTcuOSAyMCA2LjcgNy0xOS44IDcuMiAxOS44IDE5LjktNi45LTExIDE4em0tOTYuMS04My41LTIwLjcgMi4zIDEuOSAyMC44LTE0LjctMTQuOC0xNS4xIDE0LjQgMi40LTIwLjctMjAuNy0yLjggMTcuNy0xMUw0NjcgNzMuNWwxOS43IDYuOSA3LjMtMTkuNSA2LjggMTkuNyAxOS44LTYuNS0xMS4xIDE3LjZ6TTIzNCAzODUuN2wtNDUuOCA1LjQgNC42IDQ1LjktMzIuOC0zMi40LTMzIDMyLjIgNC45LTQ1LjktNDUuOC01LjggMzguOS0yNC44LTI0LTM5LjQgNDMuNiAxNSAxNS44LTQzLjQgMTUuNSA0My41IDQzLjctMTQuNy0yNC4zIDM5LjIgMzguOCAyNS4xWiIvPiA8L3N2Zz4=", "nz": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBpZD0iZmxhZy1pY29ucy1ueiIgdmlld0JveD0iMCAwIDY0MCA0ODAiPiA8ZGVmcz4gPGcgaWQ9Im56LWIiPiA8ZyBpZD0ibnotYSI+IDxwYXRoIGQ9Ik0wLS4zdi41bDEtLjV6Ii8+IDxwYXRoIGQ9Ik0uMi4zIDAtLjFsMS0uMnoiLz4gPC9nPiA8dXNlIHhsaW5rOmhyZWY9IiNuei1hIiB0cmFuc2Zvcm09InNjYWxlKC0xIDEpIi8+IDx1c2UgeGxpbms6aHJlZj0iI256LWEiIHRyYW5zZm9ybT0icm90YXRlKDcyIDAgMCkiLz4gPHVzZSB4bGluazpocmVmPSIjbnotYSIgdHJhbnNmb3JtPSJyb3RhdGUoLTcyIDAgMCkiLz4gPHVzZSB4bGluazpocmVmPSIjbnotYSIgdHJhbnNmb3JtPSJzY2FsZSgtMSAxKXJvdGF0ZSg3MikiLz4gPC9nPiA8L2RlZnM+IDxwYXRoIGZpbGw9IiMwMDI0N2QiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgMGg2NDB2NDgwSDB6Ii8+IDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMTEgMzYuMSlzY2FsZSguNjY4MjUpIj4gPHVzZSB4bGluazpocmVmPSIjbnotYiIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2ZmZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoOTAwIDEyMClzY2FsZSg0NS40KSIvPiA8dXNlIHhsaW5rOmhyZWY9IiNuei1iIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2MxNDJiIiB0cmFuc2Zvcm09Im1hdHJpeCgzMCAwIDAgMzAgOTAwIDEyMCkiLz4gPC9nPiA8ZyB0cmFuc2Zvcm09InJvdGF0ZSg4MiA1MjUuMiAxMTQuNilzY2FsZSguNjY4MjUpIj4gPHVzZSB4bGluazpocmVmPSIjbnotYiIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2ZmZiIgdHJhbnNmb3JtPSJyb3RhdGUoLTgyIDUxOSAtNDU3Ljcpc2NhbGUoNDAuNCkiLz4gPHVzZSB4bGluazpocmVmPSIjbnotYiIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2NjMTQyYiIgdHJhbnNmb3JtPSJyb3RhdGUoLTgyIDUxOSAtNDU3Ljcpc2NhbGUoMjUpIi8+IDwvZz4gPGcgdHJhbnNmb3JtPSJyb3RhdGUoODIgNTI1LjIgMTE0LjYpc2NhbGUoLjY2ODI1KSI+IDx1c2UgeGxpbms6aHJlZj0iI256LWIiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZmYiIHRyYW5zZm9ybT0icm90YXRlKC04MiA2NjguNiAtMzI3Ljcpc2NhbGUoNDUuNCkiLz4gPHVzZSB4bGluazpocmVmPSIjbnotYiIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2NjMTQyYiIgdHJhbnNmb3JtPSJyb3RhdGUoLTgyIDY2OC42IC0zMjcuNylzY2FsZSgzMCkiLz4gPC9nPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTExIDM2LjEpc2NhbGUoLjY2ODI1KSI+IDx1c2UgeGxpbms6aHJlZj0iI256LWIiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZmYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDkwMCA0ODApc2NhbGUoNTAuNCkiLz4gPHVzZSB4bGluazpocmVmPSIjbnotYiIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2NjMTQyYiIgdHJhbnNmb3JtPSJtYXRyaXgoMzUgMCAwIDM1IDkwMCA0ODApIi8+IDwvZz4gPHBhdGggZmlsbD0iIzAxMjE2OSIgZD0iTTAgMGgzMjB2MjQwSDB6Ii8+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Im0zNy41IDAgMTIyIDkwLjVMMjgxIDBoMzl2MzFsLTEyMCA4OS41IDEyMCA4OVYyNDBoLTQwbC0xMjAtODkuNUw0MC41IDI0MEgwdi0zMGwxMTkuNS04OUwwIDMyVjB6Ii8+IDxwYXRoIGZpbGw9IiNjODEwMmUiIGQ9Ik0yMTIgMTQwLjUgMzIwIDIyMHYyMGwtMTM1LjUtOTkuNXptLTkyIDEwIDMgMTcuNS05NiA3Mkgwek0zMjAgMHYxLjVsLTEyNC41IDk0IDEtMjJMMjk1IDB6TTAgMGwxMTkuNSA4OGgtMzBMMCAyMXoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEyMC41IDB2MjQwaDgwVjB6TTAgODB2ODBoMzIwVjgweiIvPiA8cGF0aCBmaWxsPSIjYzgxMDJlIiBkPSJNMCA5Ni41djQ4aDMyMHYtNDh6TTEzNi41IDB2MjQwaDQ4VjB6Ii8+IDwvc3ZnPg==", "ie": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWllIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxnIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlLXdpZHRoPSIxcHQiPiA8cGF0aCBmaWxsPSIjZmZmIiBkPSJNMCAwaDY0MHY0ODBIMHoiLz4gPHBhdGggZmlsbD0iIzAwOUE0OSIgZD0iTTAgMGgyMTMuM3Y0ODBIMHoiLz4gPHBhdGggZmlsbD0iI0ZGNzkwMCIgZD0iTTQyNi43IDBINjQwdjQ4MEg0MjYuN3oiLz4gPC9nPiA8L3N2Zz4=", "fr": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWZyIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiMwMDAwOTEiIGQ9Ik0wIDBoMjEzLjN2NDgwSDB6Ii8+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0yMTMuMyAwaDIxMy40djQ4MEgyMTMuM3oiLz4gPHBhdGggZmlsbD0iI2UxMDAwZiIgZD0iTTQyNi43IDBINjQwdjQ4MEg0MjYuN3oiLz4gPC9zdmc+", "fi": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWZpIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0wIDBoNjQwdjQ4MEgweiIvPiA8cGF0aCBmaWxsPSIjMDAyZjZjIiBkPSJNMCAxNzQuNWg2NDB2MTMxSDB6Ii8+IDxwYXRoIGZpbGw9IiMwMDJmNmMiIGQ9Ik0xNzUuNSAwaDEzMC45djQ4MGgtMTMxeiIvPiA8L3N2Zz4=", "pl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLXBsIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxnIGZpbGwtcnVsZT0iZXZlbm9kZCI+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0wIDBoNjQwdjI0MEgweiIvPiA8cGF0aCBmaWxsPSIjZGMxNDNjIiBkPSJNMCAyNDBoNjQwdjI0MEgweiIvPiA8L2c+IDwvc3ZnPg==", "sg": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLXNnIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxkZWZzPiA8Y2xpcFBhdGggaWQ9InNnLWEiPiA8cGF0aCBmaWxsLW9wYWNpdHk9Ii43IiBkPSJNMCAwaDY0MHY0ODBIMHoiLz4gPC9jbGlwUGF0aD4gPC9kZWZzPiA8ZyBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcGF0aD0idXJsKCNzZy1hKSI+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0tMjAgMGg3MjB2NDgwSC0yMHoiLz4gPHBhdGggZmlsbD0iI2RmMDAwMCIgZD0iTS0yMCAwaDcyMHYyNDBILTIweiIvPiA8cGF0aCBmaWxsPSIjZmZmIiBkPSJNMTQ2IDQwLjJhODQuNCA4NC40IDAgMCAwIC44IDE2NS4yIDg2IDg2IDAgMCAxLTEwNi42LTU5IDg2IDg2IDAgMCAxIDU5LTEwNmMxNi00LjYgMzAuOC00LjcgNDYuOS0uMnoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0ibTEzMyAxMTAgNC45IDE1LTEzLTkuMi0xMi44IDkuNCA0LjctMTUuMi0xMi44LTkuMyAxNS45LS4yIDUtMTUgNSAxNWgxNS44em0xNy41IDUyIDUgMTUuMS0xMy05LjItMTIuOSA5LjMgNC44LTE1LjEtMTIuOC05LjQgMTUuOS0uMSA0LjktMTUuMSA1IDE1aDE2em01OC41LS40IDQuOSAxNS4yLTEzLTkuMy0xMi44IDkuMyA0LjctMTUuMS0xMi44LTkuMyAxNS45LS4yIDUtMTUgNSAxNWgxNS44em0xNy40LTUxLjYgNC45IDE1LjEtMTMtOS4yLTEyLjggOS4zIDQuOC0xNS4xLTEyLjktOS40IDE2LS4xIDQuOC0xNS4xIDUgMTVoMTZ6bS00Ni4zLTM0LjMgNSAxNS4yLTEzLTkuMy0xMi45IDkuNCA0LjgtMTUuMi0xMi44LTkuNCAxNS44LS4xIDUtMTUuMSA1IDE1aDE2eiIvPiA8L2c+IDwvc3ZnPg==", "my": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLW15IiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxnIGNsaXAtcGF0aD0idXJsKCNteS1hKSI+IDxwYXRoIGZpbGw9IiNDMDAiIGQ9Ik0wIDBoNjQwdjQ4MEgweiIvPiA8cGF0aCBmaWxsPSIjQzAwIiBkPSJNMCAwaDY0MHYzNC4zSDB6Ii8+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0wIDM0LjNoNjQwdjM0LjNIMHoiLz4gPHBhdGggZmlsbD0iI0MwMCIgZD0iTTAgNjguNmg2NDB2MzQuM0gweiIvPiA8cGF0aCBmaWxsPSIjZmZmIiBkPSJNMCAxMDIuOWg2NDBWMTM3SDB6Ii8+IDxwYXRoIGZpbGw9IiNDMDAiIGQ9Ik0wIDEzNy4xaDY0MHYzNC4zSDB6Ii8+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0wIDE3MS40aDY0MHYzNC4zSDB6Ii8+IDxwYXRoIGZpbGw9IiNDMDAiIGQ9Ik0wIDIwNS43aDY0MFYyNDBIMHoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMjQwaDY0MHYzNC4zSDB6Ii8+IDxwYXRoIGZpbGw9IiNDMDAiIGQ9Ik0wIDI3NC4zaDY0MHYzNC4zSDB6Ii8+IDxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0wIDMwOC42aDY0MHYzNC4zSDB6Ii8+IDxwYXRoIGZpbGw9IiNDMDAiIGQ9Ik0wIDM0Mi45aDY0MFYzNzdIMHoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMzc3LjFoNjQwdjM0LjNIMHoiLz4gPHBhdGggZmlsbD0iI0MwMCIgZD0iTTAgNDExLjRoNjQwdjM0LjNIMHoiLz4gPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgNDQ1LjdoNjQwVjQ4MEgweiIvPiA8cGF0aCBmaWxsPSIjMDA2IiBkPSJNMCAuNWgzMjB2Mjc0LjNIMHoiLz4gPHBhdGggZmlsbD0iI0ZDMCIgZD0ibTIwNy41IDczLjggNiA0MC43IDIzLTM0LTEyLjQgMzkuMiAzNS41LTIwLjgtMjguMSAzMCA0MS0zLjItMzguMyAxNC44IDM4LjMgMTQuOC00MS0zLjIgMjguMSAzMC0zNS41LTIwLjggMTIuMyAzOS4zLTIzLTM0LjEtNiA0MC43LTUuOS00MC43LTIzIDM0IDEyLjQtMzkuMi0zNS41IDIwLjggMjgtMzAtNDEgMy4yIDM4LjQtMTQuOC0zOC4zLTE0LjggNDEgMy4yLTI4LjEtMzAgMzUuNSAyMC44LTEyLjQtMzkuMyAyMyAzNC4xem0tMzMuMyAxLjdhNzEgNzEgMCAwIDAtMTAwIDY1IDcxIDcxIDAgMCAwIDEwMCA2NSA4MCA4MCAwIDAgMS04My4yIDYuMiA4MCA4MCAwIDAgMS00My40LTcxLjIgODAgODAgMCAwIDEgMTI2LjYtNjUiLz4gPC9nPiA8ZGVmcz4gPGNsaXBQYXRoIGlkPSJteS1hIj4gPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMGg2NDB2NDgwSDB6Ii8+IDwvY2xpcFBhdGg+IDwvZGVmcz4gPC9zdmc+", "ae": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLWFlIiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxwYXRoIGZpbGw9IiMwMDczMmYiIGQ9Ik0wIDBoNjQwdjE2MEgweiIvPiA8cGF0aCBmaWxsPSIjZmZmIiBkPSJNMCAxNjBoNjQwdjE2MEgweiIvPiA8cGF0aCBmaWxsPSIjMDAwMDAxIiBkPSJNMCAzMjBoNjQwdjE2MEgweiIvPiA8cGF0aCBmaWxsPSJyZWQiIGQ9Ik0wIDBoMjIwdjQ4MEgweiIvPiA8L3N2Zz4=", "mu": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGlkPSJmbGFnLWljb25zLW11IiB2aWV3Qm94PSIwIDAgNjQwIDQ4MCI+IDxnIGZpbGwtcnVsZT0iZXZlbm9kZCI+IDxwYXRoIGZpbGw9IiMwMGEwNGQiIGQ9Ik0wIDM2MGg2NDB2MTIwSDB6Ii8+IDxwYXRoIGZpbGw9IiMxNTFmNmQiIGQ9Ik0wIDEyMGg2NDB2MTIwSDB6Ii8+IDxwYXRoIGZpbGw9IiNlZTI3MzciIGQ9Ik0wIDBoNjQwdjEyMEgweiIvPiA8cGF0aCBmaWxsPSIjZmZjZDAwIiBkPSJNMCAyNDBoNjQwdjEyMEgweiIvPiA8L2c+IDwvc3ZnPg=="};
   (function () {
     var hero = $('#hero'), canvas = $('#globe'), tip = $('#h4-peek'), g = null, hov = null;
     function boot() {
       if (!window.TCGlobe || g) return;
-      var markers = DEST.map(function (d) { return { id: d.id, lon: d.x / 4 - 170, lat: 76 - d.y / 4 }; });
-      g = window.__tcGlobe = new TCGlobe(canvas, { markers: markers, hubs: [{ lat: 13.08, lon: 80.27 }, { lat: 25.2, lon: 55.27 }], lon: 38, lat: 24, active: 'de', arcEvery: 1500, maxArcs: 5 });
+      var markers = DEST.map(function (d) { return { id: d.id, name: d.name, lon: d.x / 4 - 170, lat: 76 - d.y / 4 }; });
+      g = window.__tcGlobe = new TCGlobe(canvas, { markers: markers, hubs: [{ lat: 13.08, lon: 80.27 }, { lat: 25.2, lon: 55.27 }], lon: 38, lat: 24, active: 'de', arcEvery: 900, maxArcs: 7 });
     }
     if (document.readyState === 'complete') boot(); else addEventListener('load', boot);
 
@@ -184,7 +193,7 @@
     var card = $('#dcard'), wrap = $('#h4-globe'), imA = $('#dc-img'), imB = $('#dc-img2'), front = imA, closeT = null, swapT = null, overCard = false, side = 'r';
     addEventListener('load', function () { setTimeout(function () { Object.keys(IMG).forEach(function (k) { new Image().src = imgURL(k); }); }, 1200); });
     function pick(cx, cy) {
-      var r = canvas.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, best = null, bd = 22;
+      var r = canvas.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, best = null, bd = lastPT === 'mouse' ? 22 : 34;  // larger tap target on touch
       g.markers.forEach(function (m) { if (!m.p || m.p[2] <= .12) return; var d = Math.hypot(m.p[0] - x, m.p[1] - 13 * m.s - y); if (d < bd) { bd = d; best = m; } });
       return best;
     }
@@ -210,11 +219,11 @@
       if (!hov) return; var m = g.markers.filter(function (k) { return k.id === hov; })[0]; if (!m || !m.p) return;
       var W = card.offsetWidth || 260, H = card.offsetHeight || 250, gr = wrap.getBoundingClientRect(), px = m.p[0], py = m.p[1] - 13 * m.s, gap = 22;
       var copy = $('.h4__copy').getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
-      function ok(x, y) { var L = gr.left + x, T = gr.top + y; if (L < 12 || T < 84 || L + W > vw - 12 || T + H > vh - 12) return false; if (L < copy.right && L + W > copy.left && T < copy.bottom && T + H > copy.top && vw > 1060) return false; return true; }
+      function ok(x, y) { var L = gr.left + x, T = gr.top + y; if (L < 12 || T < 84 || L + W > vw - 12 || T + H > vh - 12) return false; if (L < copy.right && L + W > copy.left && T < copy.bottom && T + H > copy.top && vw > 1060) return false; if (vw <= 760 && T + H > copy.top - 8) return false; return true; }
       var opts = { r: [px + gap, py - H / 2], l: [px - gap - W, py - H / 2], t: [px - W / 2, py - gap - H], b: [px - W / 2, py + gap + 10] };
       var order = [side, 'r', 'l', 't', 'b'], pos = null;
       for (var k = 0; k < order.length; k++) { var o = opts[order[k]]; if (ok(o[0], o[1])) { pos = o; side = order[k]; break; } }
-      if (!pos) { pos = opts[side]; pos = [Math.max(12 - gr.left, Math.min(vw - 12 - W - gr.left, pos[0])), Math.max(84 - gr.top, Math.min(vh - 12 - H - gr.top, pos[1]))]; }
+      if (!pos) { pos = opts[side]; pos = [Math.max(12 - gr.left, Math.min(vw - 12 - W - gr.left, pos[0])), Math.max(84 - gr.top, Math.min((vw <= 760 ? Math.min(vh, copy.top - 8) : vh - 12) - H - gr.top, pos[1]))]; }
       card.dataset.side = side; card.style.setProperty('--ax', (px - pos[0]).toFixed(0) + 'px'); card.style.setProperty('--ay', (py - pos[1]).toFixed(0) + 'px');
       if (instant) { card.style.transition = 'none'; card.style.transform = 'translate3d(' + pos[0] + 'px,' + pos[1] + 'px,0)'; void card.offsetWidth; card.style.transition = ''; }
       else card.style.transform = 'translate3d(' + pos[0].toFixed(1) + 'px,' + pos[1].toFixed(1) + 'px,0)';
@@ -227,13 +236,19 @@
     card.addEventListener('pointerenter', function () { overCard = true; clearTimeout(closeT); });
     card.addEventListener('pointerleave', function () { overCard = false; close(); });
     // touch: tap a pin to open / switch, tap elsewhere to close
+    // decide by the actual pointer used (some phones/tablets report a 'fine' pointer)
+    var lastPT = fine ? 'mouse' : 'touch';
+    canvas.addEventListener('pointerdown', function (e) { lastPT = e.pointerType || lastPT; }, { passive: true });
+    canvas.style.touchAction = 'manipulation';
+    // a tap on the card (not its link) that lands over another pin switches to that pin
+    card.addEventListener('click', function (e) { if (e.target.closest('a')) return; var m = pick(e.clientX, e.clientY); if (m && m.id !== hov) open(m.id); });
     canvas.addEventListener('click', function (e) {
-      if (!g) return; var m = pick(e.clientX, e.clientY);
-      if (m) { if (!fine) { open(m.id); return; } }
-      if (!fine) { overCard = false; close(true); return; }
+      if (!g || g.dragged) return; var m = pick(e.clientX, e.clientY), touch = lastPT !== 'mouse';
+      if (touch) { if (m) open(m.id); else { overCard = false; close(true); } return; }
+      if (m) { open(m.id); return; }
       if (hov) $('#dc-go').click();
     });
-    document.addEventListener('pointerdown', function (e) { if (!hov || fine) return; if (!card.contains(e.target) && e.target !== canvas) { overCard = false; close(true); } });
+    document.addEventListener('pointerdown', function (e) { if (!hov || e.pointerType === 'mouse') return; if (!card.contains(e.target) && e.target !== canvas) { overCard = false; close(true); } });
     $('#dc-go').addEventListener('click', function (e) {
       e.preventDefault(); var id = this.dataset.id, idx = DEST.findIndex(function (k) { return k.id === id; }), b = $$('.wpin')[idx];
       overCard = false; close(true); $('#explore').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); if (b) setTimeout(function () { b.dispatchEvent(new Event('click')); }, 700);
@@ -243,7 +258,7 @@
     // scroll: globe turns to Germany and zooms as the copy lifts away (transform/opacity only)
     var gl = $('#h4-globe'), cp = $('.h4__copy'), tags = $$('.tag4', hero), flown = false;
     var sc = raf(function () {
-      if (reduce) return; var p = Math.min(1, Math.max(0, scrollY / hero.offsetHeight));
+      if (reduce) return; var p = Math.min(1, Math.max(0, scrollY / absTop(hero).h));
       gl.style.scale = (1 + p * .6).toFixed(3); gl.style.translate = (-p * 16).toFixed(2) + '% ' + (-p * 6).toFixed(2) + '%'; gl.style.opacity = (1 - p * .85).toFixed(3);
       if (g) { if (p > .08 && !flown) { flown = true; g.focus(51, 10.4); setHover(null); } else if (p < .03 && flown) { flown = false; g.release(); } }
       tags.forEach(function (t, k) { t.style.translate = '0 ' + (-p * (60 + k * 40)).toFixed(1) + 'px'; t.style.opacity = (1 - p * 1.6).toFixed(3); });
@@ -261,21 +276,26 @@
       var left = d.x > 1180, nm = d.name === 'United Kingdom' ? 'UK' : d.name === 'United States' ? 'USA' : d.name;
       g.innerHTML = '<circle class="hit" r="15" cy="-8"/><g class="wpin__s"><ellipse class="sh" rx="4" ry="1.6"/><circle class="ring" r="11" cy="-11"/>' +
         '<path class="pin" d="M0 0C-1.6-3.2-6.2-6.8-6.2-11.2a6.2 6.2 0 1 1 12.4 0C6.2-6.8 1.6-3.2 0 0Z"/><circle class="eye" cy="-11.2" r="2.3"/></g>' +
-        '<g class="tag" transform="translate(' + (left ? -14 : 14) + ' -11)"><rect y="-12" height="24" rx="12"/><text y="1" dominant-baseline="middle"' + (left ? ' text-anchor="end"' : '') + '>' + nm.toUpperCase() + '</text></g>';
+        '<g class="tag" transform="translate(' + (left ? -14 : 14) + ' -11)"><rect y="-12" height="24" rx="12"/><image class="flag" width="18" height="12" y="-6" preserveAspectRatio="xMidYMid slice" href="' + (FLAG[ISO[d.id] || d.id] || '') + '"/><text y="1" dominant-baseline="middle"' + (left ? ' text-anchor="end"' : '') + '>' + nm.toUpperCase() + '</text></g>';
       g.addEventListener('click', function () { pick(i); });
       g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } });
       pins.appendChild(g);
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', 'false');
       b.innerHTML = '<b>' + d.code + '</b>' + d.name; b.addEventListener('click', function () { pick(i); }); rail.appendChild(b);
     });
-    requestAnimationFrame(function () { $$('.wpin .tag', pins).forEach(function (t) { var tx = t.querySelector('text'), r = t.querySelector('rect'), w = tx.getComputedTextLength() + 22, end = tx.getAttribute('text-anchor') === 'end';
-      r.setAttribute('width', w); r.setAttribute('x', end ? -w + 11 : -11); }); });
+    requestAnimationFrame(function () { $$('.wpin .tag', pins).forEach(function (t) { var tx = t.querySelector('text'), r = t.querySelector('rect'), fl = t.querySelector('.flag'), tl = tx.getComputedTextLength(), w = tl + 22 + (fl ? 25 : 0), end = tx.getAttribute('text-anchor') === 'end';
+      r.setAttribute('width', w); r.setAttribute('x', end ? -w + 11 : -11);
+      if (fl) { if (end) fl.setAttribute('x', -tl - 25); else { fl.setAttribute('x', -2); tx.setAttribute('x', 25); } } }); });
     function arcPath(d) { var mx = (O.x + d.x) / 2, my = Math.min(O.y, d.y) - Math.abs(O.x - d.x) * .28 - 20; return 'M' + O.x + ' ' + O.y + ' Q ' + mx + ' ' + my + ' ' + d.x + ' ' + d.y; }
+    function k0(rb) { return i0(rb) ? 0 : Math.max(0, rb.offsetLeft - (rail.clientWidth - rb.offsetWidth) / 2); }
+    function i0(rb) { return rb === rail.children[0]; }
     function pick(i) {
       if (i === cur) return; var first = cur < 0, prev = cur; cur = i; var d = DEST[i];
       $$('.wpin', pins).forEach(function (p, k) { p.classList.toggle('on', k === i); });
       $$('button', rail).forEach(function (b, k) { b.setAttribute('aria-selected', k === i); });
-      var rb = rail.children[i]; if (!first && rb && rail.offsetParent) rail.scrollTo({ left: rb.offsetLeft - 20, behavior: reduce ? 'auto' : 'smooth' });
+      var pan = document.getElementById('wm-pan');
+      if (pan && pan.scrollWidth > pan.clientWidth + 4) { var px = d.x / 1400 * pan.scrollWidth - pan.clientWidth / 2; pan.scrollTo({ left: Math.max(0, px), behavior: first || reduce ? 'auto' : 'smooth' }); }
+      var rb = rail.children[i]; if (!first && rb && rail.offsetParent) rail.scrollTo({ left: k0(rb), behavior: reduce ? 'auto' : 'smooth' });
       // image: circular reveal from the pin's relative position
       var cx = (d.x / 1400 * 100).toFixed(0) + '%', cy = (d.y / 496 * 100).toFixed(0) + '%';
       ims.forEach(function (im, k) { im.classList.remove('prev'); if (k === prev) im.classList.add('prev'); im.style.setProperty('--cx', cx); im.style.setProperty('--cy', cy); im.classList.toggle('on', k === i); });
@@ -453,8 +473,8 @@
     // active state: the nav link whose section sits under the header
     var map = links.map(function (a) { return [a, document.getElementById(a.getAttribute('href').slice(1))]; }).filter(function (x) { return x[1]; });
     var mark = raf(function () {
-      var line = (hdr ? hdr.offsetHeight : 0) + innerHeight * .3, cur = null;
-      map.forEach(function (x) { var r = x[1].getBoundingClientRect(); if (r.top <= line && r.bottom > line) cur = x[0]; });
+      var line = 84 + innerHeight * .3, cur = null, sy = scrollY;
+      map.forEach(function (x) { var m = absTop(x[1]), top = m.t - sy; if (top <= line && top + m.h > line) cur = x[0]; });
       links.forEach(function (a) { a.classList.toggle('on', a === cur); if (a === cur) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
     });
     addEventListener('scroll', mark, { passive: true }); mark();
@@ -466,7 +486,7 @@
   /* ---------------- pathway progress ---------------- */
   var stepsWrap = $('#steps'), stepEls = $$('.step', stepsWrap);
   var runSteps = raf(function () {
-    var r = stepsWrap.getBoundingClientRect(), p = Math.max(0, Math.min(1, (innerHeight * .65 - r.top) / r.height));
+    var sm = absTop(stepsWrap), r = { top: sm.t - scrollY, height: sm.h }, p = Math.max(0, Math.min(1, (innerHeight * .65 - r.top) / r.height));
     stepsWrap.style.setProperty('--p', p.toFixed(3));
     stepEls.forEach(function (s, i) { s.classList.toggle('on', p > (i / stepEls.length) + .02 || (i === 0 && p > 0)); });
   });
@@ -476,7 +496,7 @@
   var qi = 0, qt, qcard = $('#qcard'), dots = $('#qdots');
   var QTAGS = ['Parent experience', 'Visa guidance', 'Arrival support', 'Visa guidance', 'Education loans', 'Career pathway'];
   STORIES.forEach(function (s, i) {
-    var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Story ' + (i + 1) + ': ' + s[1]); b.innerHTML = '<i></i>';
+    var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Story ' + (i + 1) + ': ' + s[1]); b.innerHTML = '<i>' + s[1].charAt(0) + '</i>';
     b.addEventListener('click', function () { showQ(i); }); dots.appendChild(b);
   });
   function showQ(i, first) {
@@ -495,8 +515,8 @@
   /* ---------------- 09 passport ---------------- */
   (function () {
     var scene = $('#pp-scene'), book = $('#book'), cover = $('#cover'), form = $('#pass'), go = $('#p-go'), st = $('#p-status');
-    $('#pp-date').textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-    function open() { if (book.classList.contains('open')) return; book.classList.add('open'); cover.setAttribute('aria-label', 'Passport opened'); setTimeout(function () { if (innerWidth > 860) return; $('#p-name').focus({ preventScroll: true }); }, 1500); }
+    (window.requestIdleCallback || setTimeout)(function () { $('#pp-date').textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase(); }); // perf: date formatting off the critical path
+    function open() { if (book.classList.contains('open')) return; book.classList.add('open'); cover.setAttribute('aria-label', 'Passport opened'); setTimeout(function () { var tries = 0; (function cue() { var n = $('#p-name'), r = n.getBoundingClientRect(); if (n.value || document.activeElement === n) return; if (r.top > 0 && r.bottom < innerHeight) n.focus({ preventScroll: true }); if (document.activeElement !== n && ++tries < 12) setTimeout(cue, 400); })(); }, reduce ? 100 : 1300); } // blinking cursor shows where to start
     cover.addEventListener('click', open);
     cover.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     new IntersectionObserver(function (e) { if (e[0].isIntersecting) { scene.classList.add('in'); setTimeout(open, reduce ? 0 : 1400); } }, { threshold: .55 }).observe(scene);
@@ -509,7 +529,7 @@
       addEventListener('load', function () { setTimeout(function () { var b = $('#begin [data-scroll-anchor]') || $('#begin'), h = $('#hdr'); if (b) scrollTo({ top: b.getBoundingClientRect().top + scrollY - (h ? h.offsetHeight : 0) - 20, behavior: 'auto' }); open(); }, 150); });
     })();
     $('#p-name').addEventListener('input', function () { $('#pp-holder').textContent = (this.value.trim() || 'YOUR NAME').toUpperCase().slice(0, 24); });
-    $('#p-from').addEventListener('change', function () { var cc = { India: '+91', UAE: '+971', 'Sri Lanka': '+94', Nepal: '+977', Bangladesh: '+880' }[this.value]; if (cc && $('#p-cc').value !== cc) { $('#p-cc').value = cc; $('#p-cc').dispatchEvent(new Event('change', { bubbles: true })); } });
+    $('#p-from').addEventListener('change', function () { var cc = /UAE/.test(this.value) ? '+971' : /other/.test(this.value) ? '' : '+91'; if (cc && $('#p-cc').value !== cc) { $('#p-cc').value = cc; $('#p-cc').dispatchEvent(new Event('change', { bubbles: true })); } });
     function bad(id, c) { $(id).closest('.pf').classList.toggle('bad', c); return c; }
     ['#p-name', '#p-phone', '#p-email'].forEach(function (id) { $(id).addEventListener('input', function () { $(id).closest('.pf').classList.remove('bad'); }); });
     form.addEventListener('submit', function (e) {
@@ -521,7 +541,7 @@
       if (x) { var f = $('.pf.bad input', form); if (f) f.focus(); return; }
       var dest = d.destination_choice || 'Germany';
       var payload = { name: d.name, email: d.email, phone: d.country_code + ' ' + d.phone_number,
-        destination: dest + (d.university ? ' | University: ' + d.university : '') + ' | ' + d.study_level + ' | from ' + d.origin, university: d.university || '', study_level: d.study_level, origin: d.origin,
+        destination: dest + (d.university ? ' | University: ' + d.university : '') + (d.universities ? ' | Universities: ' + d.universities : '') + ' | ' + d.study_level + ' | State: ' + d.origin + ' | Call: ' + (d.call_time || 'Anytime'), university: [d.university, d.universities].filter(Boolean).join(', '), study_level: d.study_level, origin: d.origin, call_time: d.call_time || '', universities: d.universities || '',
         from_name: 'Tutee Connect — Germany landing page', page: location.pathname + location.search, botcheck: d.botcheck };
       go.disabled = true; $('#p-go-t').textContent = 'Stamping your passport…';
       // Two independent channels; the lead counts as received when EITHER confirms.
@@ -571,12 +591,14 @@
       secs.slice(1).forEach(function (s) {
         if (straight) { pts.push([hx, s.offsetTop + s.offsetHeight - 40, 0]); return; }
         side = 1 - side;
+        if (s.classList.contains('tkr-band')) { pts.push([hx, s.offsetTop + 40, 0]); pts.push([hx, s.offsetTop + s.offsetHeight - 40, 0]); return; } // straight through the news line
         if (s.id === 'pathway') {
           // the journey thread becomes the pathway itself: it runs through the centre of every numbered milestone
-          var ns = $$('.step__n', s).map(function (n) { var r = n.getBoundingClientRect(); return [r.left + r.width / 2, r.top - mt + r.height / 2]; });
+          var ns = $$('.step__n', s).map(function (n) { var x = n.offsetWidth / 2, y = n.offsetHeight / 2, e = n; while (e && e !== main) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return [x, y]; }); // layout positions, unaffected by reveal transforms
           if (ns.length) {
-            pts.push([side ? hx + 14 : hx - 6, s.offsetTop + 40]);
-            pts.push([hx, ns[0][1] - 105, 0]); pts.push([ns[0][0], ns[0][1] - 45, 0]);
+            var px0 = pts[pts.length - 1][0]; // enter the pathway section in a straight line
+            pts.push([px0, s.offsetTop + 40, 0]);
+            pts.push([px0, ns[0][1] - 105, 0]); pts.push([ns[0][0], ns[0][1] - 45, 0]);
             ns.forEach(function (c) { pts.push([ns[0][0], c[1], 0]); });
             // after milestone 4: straight down, one short turn into the margin (clear of the CTA), then straight on down the page
             var l4 = ns[ns.length - 1][1], cta = s.querySelector('.pathway__cta'), cy = cta ? cta.getBoundingClientRect().top - mt : l4 + 260;
@@ -590,9 +612,13 @@
       var d = 'M' + pts[0][0] + ' ' + pts[0][1];
       // bulge (3rd value) bows the segment sideways a little, so the route feels walked rather than ruled
       for (var k = 1; k < pts.length; k++) { var a = pts[k - 1], b = pts[k], my = (a[1] + b[1]) / 2, bw = b[2] || 0; d += ' C ' + (a[0] + bw) + ' ' + my + ' ' + (b[0] + bw) + ' ' + my + ' ' + b[0] + ' ' + b[1]; }
-      base.setAttribute('d', d); live.setAttribute('d', d); L = live.getTotalLength(); live.style.strokeDasharray = L;
-      // perf: sample the path once (every ~6px) so scrolling never calls getPointAtLength
-      TY = []; TX = []; TL = []; for (var sl = 0; sl <= L; sl += 6) { var sp = live.getPointAtLength(sl); TL.push(sl); TX.push(sp.x); TY.push(sp.y); }
+      base.setAttribute('d', d); live.setAttribute('d', d);
+      // perf (v140): sample the curves analytically (no getPointAtLength — that call was ~1/3 of page-load CPU)
+      TY = [0]; TX = [0]; TL = [0]; TX[0] = pts[0][0]; TY[0] = pts[0][1]; var acc = 0, px = pts[0][0], py = pts[0][1];
+      for (var k2 = 1; k2 < pts.length; k2++) { var A = pts[k2 - 1], B = pts[k2], m2 = (A[1] + B[1]) / 2, b2 = B[2] || 0, n2 = Math.max(2, Math.ceil(Math.abs(B[1] - A[1]) / 6));
+        for (var q = 1; q <= n2; q++) { var t = q / n2, u = 1 - t, x = u*u*u*A[0] + 3*u*u*t*(A[0]+b2) + 3*u*t*t*(B[0]+b2) + t*t*t*B[0], y = u*u*u*A[1] + 3*u*u*t*m2 + 3*u*t*t*m2 + t*t*t*B[1];
+          acc += Math.sqrt((x-px)*(x-px) + (y-py)*(y-py)); px = x; py = y; TL.push(acc); TX.push(x); TY.push(y); } }
+      L = acc; live.style.strokeDasharray = L;
       upd();
     }
     // the thread runs behind sections: draw it only in the gutters by clipping to section edges is overkill — it sits under content (z-index) and fades over text areas
@@ -606,6 +632,7 @@
     }
     addEventListener('load', build); addEventListener('resize', raf(build)); addEventListener('scroll', raf(upd), { passive: true });
     setTimeout(build, 1500);
+    if (window.ResizeObserver) { var rbT; new ResizeObserver(function () { clearTimeout(rbT); rbT = setTimeout(build, 200); }).observe(main); }
   })();
 
   /* ---------------- scroll-linked moments: ticker, €0 scale, expanding band, journey rail, hero depth ---------------- */
@@ -615,7 +642,7 @@
     // perf: section positions are measured once (and again when the page height changes), not on every scroll frame
     var secMap = null, secAt = 0, lastCur = -1;
     function mapSecs() {
-      var y = scrollY; secAt = document.documentElement.scrollHeight;
+      var y = scrollY; secAt = absEpoch;
       secMap = { order: order.map(function (id) { var el = document.getElementById(id); return el ? el.getBoundingClientRect().top + y : 1e9; }), dark: [] };
       $$('.on-dark,.explore,.depart,.hero,.hero4,.ticker--dark,.band,#hero,#explore,#choose,#services,#pathway,#begin').forEach(function (el) { var r = el.getBoundingClientRect(); secMap.dark.push([r.top + y, r.bottom + y]); });
     }
@@ -623,23 +650,85 @@
     var run = raf(function () {
       var vh = innerHeight;
       if (!reduce) {
-        ticks.forEach(function (t) { var r = t.parentElement.getBoundingClientRect(); if (r.bottom < 0 || r.top > vh) return; t.style.transform = 'translate3d(' + ((r.top - vh) * 0.35 * +t.dataset.tick - (t.dataset.tick > 0 ? 600 : 0)) + 'px,0,0)'; });
-        var zr = zero.getBoundingClientRect(), zp = Math.max(0, Math.min(1, (vh - zr.top) / (vh * .8)));
+        var sy = scrollY; ticks.forEach(function (t) { var m = absTop(t.parentElement), r = { top: m.t - sy, bottom: m.t - sy + m.h }; if (r.bottom < 0 || r.top > vh) return; t.style.transform = 'translate3d(' + ((r.top - vh) * 0.35 * +t.dataset.tick - (t.dataset.tick > 0 ? 600 : 0)) + 'px,0,0)'; });
+        var zm = absTop(zero), zr = { top: zm.t - sy }, zp = Math.max(0, Math.min(1, (vh - zr.top) / (vh * .8)));
         zero.style.setProperty('--z', (0.55 + zp * 0.45).toFixed(3));
-        var br = band.getBoundingClientRect(), bp = Math.max(0, Math.min(1, (vh - br.top) / (vh * .9)));
+        var bm = absTop(band), br = { top: bm.t - sy }, bp = Math.max(0, Math.min(1, (vh - br.top) / (vh * .9)));
         band.style.setProperty('--w', ((1 - bp) * (innerWidth < 760 ? 12 : 30)).toFixed(2) + '%'); band.style.setProperty('--br', ((1 - bp) * 28).toFixed(1) + 'px');
       }
       // journey rail
-      if (!secMap || secAt !== document.documentElement.scrollHeight) mapSecs();
+      if (!secMap || secAt !== absEpoch) mapSecs();
       var line = scrollY + vh * .5, cur = 0; secMap.order.forEach(function (t, k) { if (t < line) cur = k; });
       if (cur !== lastCur) { rl.forEach(function (a, k) { a.classList.toggle('on', k === cur); }); lastCur = cur; }
       rail.classList.toggle('on', scrollY > vh * .6);
       var dk = secMap.dark.some(function (r) { return r[0] < line && r[1] > line; });
       rail.classList.toggle('dark', dk);
+      // glass header: dark text when the section under it is light
+      var hy = scrollY + 40, hdk = secMap.dark.some(function (r) { return r[0] < hy && r[1] > hy; }), hd = document.getElementById('hdr');
+      if (hd) hd.classList.toggle('on-light', !hdk);
     });
     addEventListener('scroll', run, { passive: true }); addEventListener('resize', run); run();
 
   })();
 
   $('#yr').textContent = new Date().getFullYear();
+})();
+
+/* v115 student stories: the avatars slowly orbit the rings (desktop); pause while hovered */
+(function () {
+  var box = document.querySelector('.ring3'), av = document.getElementById('qdots'); if (!box || !av) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var mq = { matches: true, addEventListener: function () {} }, small = matchMedia('(max-width:760px)'), on = false, t0 = performance.now(), paused = 0, pAt = 0, raf = 0, vis = true;
+  var RING = [.74, .98, .74, .98, .74, .98], START = [200, 150, 320, 15, 75, 255]; // ring (share of half-width) and start angle (deg) per avatar
+  function frame(now) {
+    raf = 0; if (!on || !vis) return;
+    var bs = av.children, w = box.clientWidth, h = box.clientHeight, cx = w / 2, cy = h / 2, R = Math.min(w * .47, 560), t = (paused ? pAt : now - paused * 0) - t0;
+    if (small.matches) { // phones: avatars travel round a tilted ring above the quote, nearer ones larger
+      var n = bs.length, cX = w / 2, cY = 78, rX = Math.min(w * .42, 170), rY = 42, base = t / 1000 * 14;
+      for (var k = 0; k < n; k++) { var aa = (base + k * 360 / n) * Math.PI / 180, z = (Math.sin(aa) + 1) / 2;
+        bs[k].style.transform = 'translate3d(' + (cX + Math.cos(aa) * rX).toFixed(1) + 'px,' + (cY + Math.sin(aa) * rY).toFixed(1) + 'px,0) translate(-50%,-50%)'; bs[k].style.scale = (.62 + z * .43).toFixed(3);
+        bs[k].style.zIndex = 1 + Math.round(z * 10); bs[k].style.opacity = (.55 + z * .45).toFixed(2); }
+      raf = requestAnimationFrame(frame); return;
+    }
+    for (var i = 0; i < bs.length; i++) {
+      bs[i].style.opacity = bs[i].style.zIndex = bs[i].style.scale = '';
+      var dir = i % 2 ? -1 : 1, a = (START[i % 6] + dir * t / 1000 * (i % 2 ? 3.2 : 4.5)) * Math.PI / 180, rx = R * RING[i % 6], ry = Math.min(rx, h / 2 - 48) * (i % 2 ? 1 : .94);
+      bs[i].style.transform = 'translate3d(' + (cx + Math.cos(a) * rx).toFixed(1) + 'px,' + (cy + Math.sin(a) * ry).toFixed(1) + 'px,0) translate(-50%,-50%)';
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  function set() { on = mq.matches; av.classList.toggle('orbit', on); if (!on) { [].forEach.call(av.children, function (b) { b.style.transform = b.style.scale = ''; }); } else if (!raf) raf = requestAnimationFrame(frame); }
+  av.addEventListener('mouseenter', function () { paused = 1; pAt = performance.now(); });
+  av.addEventListener('mouseleave', function () { if (paused) { t0 += performance.now() - pAt; paused = 0; } });
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { vis = es[0].isIntersecting; if (vis && on && !raf) raf = requestAnimationFrame(frame); }).observe(box);
+  (mq.addEventListener ? mq.addEventListener('change', set) : mq.addListener(set)); setTimeout(set, 50);
+})();
+
+/* v116 eligibility check — three taps, indicative result, then free counselling */
+(function () {
+  var f = document.getElementById('elig'), out = document.getElementById('elig-res'); if (!f) return;
+  var A = {};
+  f.addEventListener('click', function (e) {
+    var b = e.target.closest('.eq__o button'); if (!b) return;
+    var q = b.closest('.eq'); q.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    A[q.getAttribute('data-q')] = b.getAttribute('data-v'); show();
+  });
+  function show() {
+    if (!A.lvl || !A.lang || !A.aim) return;
+    var html = '';
+    var ok = 'good', t, d;
+    if (A.aim === 'ba') { if (A.lvl === '12') { ok = 'mid'; t = 'Possible via Studienkolleg'; d = ''; html = '<span class="elig__route"><b>Route 1: Studienkolleg Pathway</b><i>Completed Class 12 (CBSE/ICSE/State Board)? Most students complete a 1-year Studienkolleg or 1 year of university in India before starting their bachelor\u2019s at a public university. (Note: Direct admission is still possible at many non-public/private universities.)</i></span><span class="elig__route"><b>Route 2: Direct Admission</b><i>Completed Class 12 via IB Diploma or Cambridge A-Levels? You may qualify for direct entry into public universities without a foundation year.</i></span>'; } else { t = 'Looks promising'; d = 'Your studies so far may give direct entry to a bachelor’s. We check how your certificates are recognised.'; } }
+    else if (A.aim === 'ma') { if (A.lvl === '12') { ok = 'low'; t = 'A bachelor’s comes first'; d = 'A master’s needs a completed bachelor’s degree. We can map a bachelor’s route for you.'; } else if (A.lvl === 'ug3') { ok = 'mid'; t = 'Eligible for many programmes'; d = 'Many master’s programmes accept 3-year degrees; some ask for 4 years or extra credits. We shortlist the ones that fit.'; } else { t = 'Looks promising'; d = 'Your degree is a strong base for a German master’s. Next: APS, language proof and shortlisting.'; } }
+    else { if (A.lvl !== 'pg') { ok = 'low'; t = 'A master’s usually comes first'; d = 'A German PhD normally needs a master’s degree. Let’s plan the route.'; } else { t = 'Looks promising'; d = 'With a master’s you can look for a supervisor or a structured PhD programme.'; } }
+    if (A.lang === 'no') d += ' You’ll also need a language test; we’ll suggest the right one.';
+    out.className = 'elig__res is-' + ok; out.innerHTML = html || '<b>' + t + '</b><span>' + d + '</span>'; out.hidden = false;
+    var lv = document.getElementById('f-level'); if (lv) { var m = { ba: "Bachelor's degree", ma: "Master's degree", phd: 'PhD' }[A.aim]; if (m) { lv.value = m; lv.dispatchEvent(new Event('change', { bubbles: true })); } }
+  }
+})();
+
+/* v135 pathway rail stops at milestone 4 (the line used to run on past the last circle) */
+(function () {
+  var w = document.getElementById('steps'); if (!w) return;
+  function fit() { var ns = w.querySelectorAll('.step__n'); if (!ns.length) return; var l = ns[ns.length - 1], y = 0, e = l; while (e && e !== w) { y += e.offsetTop; e = e.offsetParent; } w.style.setProperty('--rail-end', Math.max(0, w.offsetHeight - (y + l.offsetHeight / 2)) + 'px'); }
+  fit(); addEventListener('load', fit); addEventListener('resize', fit); if (window.ResizeObserver) new ResizeObserver(fit).observe(w);
 })();

@@ -63,15 +63,21 @@ function tcExplorer(U) {
 
   /* ---------- detail card ---------- */
   var imA = $('#im-a'), imB = $('#im-b'), front = imA, swapT;
+  // v133: a slow first load no longer leaves the card empty — show the soft fallback, then swap the photo in as soon as it arrives
+  var reqId = 0;
   function setImage(u) {
-    var back = front === imA ? imB : imA, src = img(u, 1200, 600);
+    var id = ++reqId, src = img(u, 1200, 600), fb = 'https://images.unsplash.com/photo-' + FALLBACK + '?auto=format&fit=crop&w=1200&h=600&q=80';
     clearTimeout(swapT);
-    var go = function () { back.classList.add('on'); front.classList.remove('on'); front = back; };
-    if (!src) { back.style.backgroundImage = ''; back.classList.add('fb'); go(); return; }
-    back.classList.remove('fb');
-    var pre = new Image(); pre.onload = function () { back.style.backgroundImage = 'url(' + src + ')'; go(); };
-    pre.onerror = function () { back.style.backgroundImage = ''; back.classList.add('fb'); go(); };
-    pre.src = src; swapT = setTimeout(function () { if (!pre.complete) { back.style.backgroundImage = ''; back.classList.add('fb'); go(); pre.onload = pre.onerror = null; } }, 2500);
+    var show = function (url) {
+      if (id !== reqId) return;
+      var back = front === imA ? imB : imA;
+      back.classList.toggle('fb', !url); back.style.backgroundImage = url ? 'url(' + url + ')' : '';
+      back.classList.add('on'); front.classList.remove('on'); front = back;
+    };
+    var load = function (url, ok, bad) { var im = new Image(); im.onload = function () { ok(url); }; im.onerror = bad; im.src = url; return im; };
+    var shown = false;
+    var pre = load(src || fb, function (url) { shown = true; clearTimeout(swapT); show(url); }, function () { if (src) load(fb, function (url) { shown = true; show(url); }, function () { if (!shown) show(''); }); else show(''); });
+    swapT = setTimeout(function () { if (!pre.complete && !shown) { var back = front === imA ? imB : imA; if (!front.style.backgroundImage) { front.classList.add('fb'); } } }, 2500);
   }
   function anim(el) { el.classList.remove('sw'); void el.offsetWidth; el.classList.add('sw'); }
   function select(u, opt) {
