@@ -5,7 +5,7 @@ function tcExplorer(U) {
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var AREAS = ['Engineering', 'Computer Science', 'Business & Economics', 'Natural Sciences', 'Medicine & Life Sciences', 'Social Sciences', 'Law', 'Humanities', 'Architecture'];
   var FALLBACK = '1467269204594-9661b134dd2b';
-  var img = function (u, w, h) { return u.img ? 'https://images.unsplash.com/photo-' + u.img + '?auto=format&fit=crop&w=' + w + (h ? '&h=' + h : '') + '&q=80' : ''; };
+  var img = function (u, w, h) { return u.img ? 'https://images.unsplash.com/photo-' + u.img + '?auto=format&fit=crop&w=' + w + (h ? '&h=' + h : '') + '&q=85' : ''; };
   var norm = function (s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss'); };
   U.forEach(function (u, i) { u.i = i; u.x = (u.lon - 3.5) * 30; u.y = (55.6 - u.lat) * 30; u.hay = norm([u.name, u.full || '', u.s, u.id, u.city, u.state, u.type, u.tu9 ? 'tu9' : ''].join(' ')); });
 
@@ -66,7 +66,7 @@ function tcExplorer(U) {
   // v133: a slow first load no longer leaves the card empty — show the soft fallback, then swap the photo in as soon as it arrives
   var reqId = 0;
   function setImage(u) {
-    var id = ++reqId, src = img(u, 1200, 600), fb = 'https://images.unsplash.com/photo-' + FALLBACK + '?auto=format&fit=crop&w=1200&h=600&q=80';
+    var id = ++reqId, src = img(u, Math.min(2400, Math.round(1200 * Math.min(2, window.devicePixelRatio || 1))), Math.min(1200, Math.round(600 * Math.min(2, window.devicePixelRatio || 1)))), fb = 'https://images.unsplash.com/photo-' + FALLBACK + '?auto=format&fit=crop&w=1200&h=600&q=80';
     clearTimeout(swapT);
     var show = function (url) {
       if (id !== reqId) return;
@@ -185,6 +185,7 @@ function tcExplorer(U) {
   function ready(k) { // preload + decode the slide before it is ever shown
     var im = S[k].querySelector('img');
     if (!im.dataset.src) return im.complete && im.naturalWidth ? Promise.resolve() : new Promise(function (r) { im.onload = im.onerror = r; });
+    var so = S[k].querySelector('source[data-srcset]'); if (so) { so.srcset = so.dataset.srcset; delete so.dataset.srcset; }
     im.srcset = im.dataset.srcset; im.src = im.dataset.src; delete im.dataset.src; delete im.dataset.srcset;
     return (im.decode ? im.decode() : new Promise(function (r) { im.onload = r; })).catch(function () {});
   }
